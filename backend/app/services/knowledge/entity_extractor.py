@@ -162,7 +162,7 @@ def extract_structured_entities(
                 })
 
     # Products / Platforms
-    product_matches = re.findall(r"(Salila(?:\s+Platform)?|Sustainability Intelligence Platform)", text, re.I)
+    product_matches = re.findall(r"\b([A-Z][a-zA-Z0-9\-_]+\s+(?:Platform|Software|Suite|Engine|Intelligence Platform|Tool|Analytics))\b", text)
     for prod in set(product_matches):
         entities.append({
             "id": str(uuid.uuid4()),
