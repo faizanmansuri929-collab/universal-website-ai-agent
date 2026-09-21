@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 800
     CHUNK_OVERLAP: int = 150
     
+    HARD_CODED_BOT_TTL_DAYS: int = int(os.getenv("HARD_CODED_BOT_TTL_DAYS", "7"))
+    
     class Config:
         env_file = ".env"
         extra = "ignore"

@@ -47,20 +47,32 @@ def analyze_user_query(query: str, sector: str = "general") -> Dict[str, Any]:
     applied_filters = {}
 
     # Sector Aware Intent Mapping
-    if sector == "college" or any(w in q_lower for w in ["course", "fee", "admission", "b.tech", "degree", "program", "college", "placement"]):
-        if any(w in q_lower for w in ["course", "program", "degree", "branch", "specialization", "b.tech", "m.tech", "mba"]):
+    if sector == "college" or any(w in q_lower for w in ["course", "fee", "admission", "b.tech", "degree", "program", "college", "placement", "exam", "faculty", "leave", "hostel", "timetable"]):
+        if any(w in q_lower for w in ["counselor", "book call", "book counselor", "speak with advisor", "talk to advisor", "campus tour", "request callback"]):
+            intent = "counselor_booking"
+            entity_type = "counselor"
+        elif any(w in q_lower for w in ["exam", "timetable", "admit card", "semester exam", "backlog", "re-evaluation", "attendance", "75%"]):
+            intent = "student_exam_timetable"
+            entity_type = "student_support"
+        elif any(w in q_lower for w in ["leave policy", "casual leave", "medical leave", "duty leave", "research grant", "reimbursement", "faculty", "handbook", "hr policy", "exam duty"]):
+            intent = "faculty_policy_inquiry"
+            entity_type = "faculty_policy"
+        elif any(w in q_lower for w in ["course", "program", "degree", "branch", "specialization", "b.tech", "m.tech", "mba", "bba", "bca", "mca", "cse", "data science"]):
             intent = "course_inquiry"
             entity_type = "course"
-        elif any(w in q_lower for w in ["fee", "fees", "cost", "scholarship"]):
+        elif any(w in q_lower for w in ["fee", "fees", "cost", "scholarship", "tuition", "instalment"]):
             intent = "fee_inquiry"
             entity_type = "fee"
-        elif any(w in q_lower for w in ["admission", "apply", "eligibility", "entrance", "cutoff"]):
+        elif any(w in q_lower for w in ["eligibility", "criteria", "cutoff", "minimum percentage", "pcm percentage", "entrance exam", "jee", "gate", "cat"]):
+            intent = "eligibility_check"
+            entity_type = "eligibility"
+        elif any(w in q_lower for w in ["admission", "apply", "application process", "intake", "registration", "seat"]):
             intent = "admission_process"
             entity_type = "admission"
-        elif any(w in q_lower for w in ["placement", "package", "salary", "recruiter", "company", "companies"]):
+        elif any(w in q_lower for w in ["placement", "package", "salary", "recruiter", "company", "companies", "highest package", "average package"]):
             intent = "placement_record"
             entity_type = "placement"
-        elif any(w in q_lower for w in ["hostel", "accommodation", "room", "mess"]):
+        elif any(w in q_lower for w in ["hostel", "accommodation", "room", "mess", "curfew", "gate pass"]):
             intent = "hostel_inquiry"
             entity_type = "hostel"
         elif any(w in q_lower for w in ["contact", "address", "phone", "email", "location"]):

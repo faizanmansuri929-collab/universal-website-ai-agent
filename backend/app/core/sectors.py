@@ -3,20 +3,43 @@ from typing import Dict, Any, List
 SECTOR_CONFIGS: Dict[str, Dict[str, Any]] = {
     "college": {
         "name": "College / University / Education",
-        "description": "Educational institutions, universities, colleges, and schools offering degree and diploma programs.",
-        "common_content_types": ["course_catalog", "admission_criteria", "fee_structure", "placement_report", "faculty_profile", "campus_facilities"],
-        "important_entities": ["course", "program", "degree", "specialization", "fee", "eligibility", "admission", "scholarship", "hostel", "placement", "department", "faculty"],
-        "typical_intents": ["course_inquiry", "fee_inquiry", "admission_process", "eligibility_check", "placement_record", "hostel_inquiry", "faculty_inquiry", "campus_tour"],
+        "description": "Educational institutions, universities, colleges, and academic schools offering degree, diploma, and research programs.",
+        "common_content_types": [
+            "course_catalog", "admission_criteria", "fee_structure", "placement_report",
+            "faculty_profile", "campus_facilities", "hostel_rules", "student_services",
+            "academic_calendar", "exam_schedule", "faculty_policies"
+        ],
+        "important_entities": [
+            "course", "program", "degree", "specialization", "fee", "eligibility",
+            "admission", "scholarship", "hostel", "placement", "department", "faculty",
+            "exam_deadline", "attendance_policy", "faculty_leave_policy"
+        ],
+        "typical_intents": [
+            "course_inquiry", "fee_inquiry", "admission_process", "eligibility_check",
+            "placement_record", "hostel_inquiry", "faculty_inquiry", "counselor_booking",
+            "campus_tour", "student_exam_timetable", "student_support", "faculty_policy_inquiry"
+        ],
         "retrieval_priorities": {
-            "course": 1.2,
-            "fee": 1.2,
-            "eligibility": 1.1,
-            "admission": 1.1,
-            "placement": 1.0,
-            "department": 0.9,
-            "general": 0.8
+            "course": 1.35,
+            "admission": 1.30,
+            "fee": 1.25,
+            "eligibility": 1.20,
+            "placement": 1.15,
+            "student_support": 1.10,
+            "faculty_policy": 1.10,
+            "department": 1.0,
+            "general": 0.85
         },
-        "answer_style": "Academic, helpful, and structured with clear degree names, eligibility criteria, and department details."
+        "answer_style": "Authoritative, helpful, and academically structured. When answering admission or course inquiries, clearly list matching programs, eligibility criteria, and offer counselor guidance.",
+        "suggested_actions": [
+            "Explore Courses",
+            "Admission Information",
+            "Check Eligibility",
+            "Fees & Scholarships",
+            "Book Counselor Call",
+            "Student Exams & Timetable",
+            "Faculty Policy Handbook"
+        ]
     },
     "hospital": {
         "name": "Hospital / Healthcare",

@@ -185,4 +185,13 @@ class VectorStore:
         sorted_results = sorted(results_map.values(), key=lambda x: x["score"], reverse=True)
         return sorted_results[:top_k]
 
+    def search(
+        self,
+        agent_id: str,
+        query_embedding: List[float],
+        top_k: int = 5,
+        query_text: str = ""
+    ) -> List[Dict[str, Any]]:
+        return self.search_similarity(agent_id, query_embedding, top_k, query_text)
+
 vector_store = VectorStore()

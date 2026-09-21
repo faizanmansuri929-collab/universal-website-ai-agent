@@ -6,8 +6,9 @@ import { Agent, Page, api } from '@/lib/api';
 import CrawlProgress from '@/components/CrawlProgress';
 import ChatInterface from '@/components/ChatInterface';
 import KnowledgeBase from '@/components/KnowledgeBase';
+import AdmissionLeads from '@/components/AdmissionLeads';
 import WidgetEmbedModal from '@/components/WidgetEmbedModal';
-import { Globe, RefreshCw, Code, MessageSquare, Database, ArrowLeft, ExternalLink, Sparkles, Building2 } from 'lucide-react';
+import { Globe, RefreshCw, Code, MessageSquare, Database, ArrowLeft, ExternalLink, Sparkles, Building2, Users, Flame } from 'lucide-react';
 
 export default function AgentDashboardPage() {
   const params = useParams();
@@ -17,7 +18,7 @@ export default function AgentDashboardPage() {
   const [agent, setAgent] = useState<Agent | null>(null);
   const [pages, setPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'chat' | 'knowledge'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'leads' | 'knowledge'>('chat');
   const [showWidgetModal, setShowWidgetModal] = useState(false);
 
   const fetchAgentData = async () => {
@@ -146,7 +147,7 @@ export default function AgentDashboardPage() {
 
       {/* Main Tabs Navigation */}
       <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setActiveTab('chat')}
             className={`px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all ${
@@ -155,7 +156,21 @@ export default function AgentDashboardPage() {
                 : 'text-slate-400 hover:text-slate-200 bg-slate-900/40 hover:bg-slate-900 border border-transparent'
             }`}
           >
-            <MessageSquare className="w-4 h-4" /> Test Chat & Knowledge Debugger
+            <MessageSquare className="w-4 h-4" /> Admission Chat Sandbox
+          </button>
+
+          <button
+            onClick={() => setActiveTab('leads')}
+            className={`px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all ${
+              activeTab === 'leads'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                : 'text-slate-400 hover:text-slate-200 bg-slate-900/40 hover:bg-slate-900 border border-transparent'
+            }`}
+          >
+            <Users className="w-4 h-4 text-emerald-400" /> Admission Leads & CRM
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 font-bold">
+              NEW
+            </span>
           </button>
 
           <button
@@ -184,6 +199,10 @@ export default function AgentDashboardPage() {
         </div>
       )}
 
+      {activeTab === 'leads' && (
+        <AdmissionLeads agentId={agent.id} />
+      )}
+
       {activeTab === 'knowledge' && (
         <KnowledgeBase
           agentId={agent.id}
@@ -205,3 +224,4 @@ export default function AgentDashboardPage() {
     </div>
   );
 }
+

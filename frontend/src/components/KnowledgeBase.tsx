@@ -19,7 +19,7 @@ export default function KnowledgeBase({
   detectedSector = 'general',
   onRefresh,
 }: KnowledgeBaseProps) {
-  const [subTab, setSubTab] = useState<'pages' | 'entities'>('pages');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'real' | 'entities' | 'demo'>('all');
   const [entities, setEntities] = useState<Entity[]>([]);
   const [recrawling, setRecrawling] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,7 +58,16 @@ export default function KnowledgeBase({
     }
   };
 
-  const filteredPages = pages.filter(
+  const realPages = pages.filter(p => !p.source_type || p.source_type === 'REAL_WEBSITE');
+  const demoPages = pages.filter(p => p.source_type === 'DEMO_DATA' || p.source_type === 'DEMO_DOCUMENT');
+
+  const displayedPages = pages.filter((p) => {
+    if (sourceFilter === 'real') return !p.source_type || p.source_type === 'REAL_WEBSITE';
+    if (sourceFilter === 'demo') return p.source_type === 'DEMO_DATA' || p.source_type === 'DEMO_DOCUMENT';
+    return true; // 'all'
+  });
+
+  const filteredPages = displayedPages.filter(
     (p) =>
       p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.url.toLowerCase().includes(searchTerm.toLowerCase())
@@ -71,6 +80,28 @@ export default function KnowledgeBase({
   );
 
   const totalChars = pages.reduce((acc, p) => acc + (p.char_count || 0), 0);
+
+  const renderSourceBadge = (sourceType?: string) => {
+    if (sourceType === 'DEMO_DATA') {
+      return (
+        <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
+          DEMO DATA
+        </span>
+      );
+    }
+    if (sourceType === 'DEMO_DOCUMENT') {
+      return (
+        <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono uppercase bg-purple-500/10 text-purple-400 border border-purple-500/30">
+          DEMO DOC
+        </span>
+      );
+    }
+    return (
+      <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+        REAL WEB
+      </span>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -97,15 +128,20 @@ export default function KnowledgeBase({
       </div>
 
       {/* Stats Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-1">
-          <span className="text-xs text-slate-400">Total Indexed Pages</span>
-          <div className="text-2xl font-bold text-white">{pages.length}</div>
+          <span className="text-xs text-slate-400">Real Web Pages</span>
+          <div className="text-2xl font-bold text-emerald-400">{realPages.length}</div>
         </div>
 
         <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-1">
           <span className="text-xs text-slate-400">Structured Entities</span>
           <div className="text-2xl font-bold text-purple-400">{entities.length}</div>
+        </div>
+
+        <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-1">
+          <span className="text-xs text-slate-400">Demo Docs & Policies</span>
+          <div className="text-2xl font-bold text-indigo-400">{demoPages.length}</div>
         </div>
 
         <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-1">
@@ -116,47 +152,69 @@ export default function KnowledgeBase({
         </div>
       </div>
 
-      {/* Sub Tabs: Pages vs Entities */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+      {/* Filter Tabs: All vs Real vs Entities vs Demo */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-2">
         <button
-          onClick={() => setSubTab('pages')}
+          onClick={() => setSourceFilter('all')}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-            subTab === 'pages'
+            sourceFilter === 'all'
               ? 'bg-blue-600 text-white shadow'
               : 'text-slate-400 hover:text-white bg-slate-900'
           }`}
         >
-          <FileText className="w-3.5 h-3.5" /> Pages ({pages.length})
+          <Layers className="w-3.5 h-3.5" /> All Sources ({pages.length})
         </button>
 
         <button
-          onClick={() => setSubTab('entities')}
+          onClick={() => setSourceFilter('real')}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-            subTab === 'entities'
+            sourceFilter === 'real'
+              ? 'bg-emerald-600 text-white shadow'
+              : 'text-slate-400 hover:text-white bg-slate-900'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5 text-emerald-300" /> Real Web Pages ({realPages.length})
+        </button>
+
+        <button
+          onClick={() => setSourceFilter('entities')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            sourceFilter === 'entities'
               ? 'bg-purple-600 text-white shadow'
               : 'text-slate-400 hover:text-white bg-slate-900'
           }`}
         >
-          <Tag className="w-3.5 h-3.5" /> Structured Entities ({entities.length})
+          <Tag className="w-3.5 h-3.5 text-purple-300" /> Structured Entities ({entities.length})
+        </button>
+
+        <button
+          onClick={() => setSourceFilter('demo')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            sourceFilter === 'demo'
+              ? 'bg-indigo-600 text-white shadow'
+              : 'text-slate-400 hover:text-white bg-slate-900'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-indigo-300" /> Demo Data & Docs ({demoPages.length})
         </button>
       </div>
 
-      {/* Content Table */}
-      {subTab === 'pages' && (
+      {/* Pages Content Table */}
+      {sourceFilter !== 'entities' && (
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
           <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-4">
             <div className="relative flex-1 max-w-xs">
               <Search className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
               <input
                 type="text"
-                placeholder="Search indexed pages..."
+                placeholder="Search indexed sources..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <span className="text-xs text-slate-400">
-              Showing {filteredPages.length} of {pages.length} pages
+              Showing {filteredPages.length} of {displayedPages.length} sources
             </span>
           </div>
 
@@ -164,8 +222,9 @@ export default function KnowledgeBase({
             <table className="w-full text-left text-xs text-slate-300">
               <thead className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
-                  <th className="p-3.5">Page Title</th>
-                  <th className="p-3.5">URL</th>
+                  <th className="p-3.5">Source Type</th>
+                  <th className="p-3.5">Title</th>
+                  <th className="p-3.5">URL / Identifier</th>
                   <th className="p-3.5 text-right">Content Size</th>
                   <th className="p-3.5 text-right">Actions</th>
                 </tr>
@@ -173,16 +232,21 @@ export default function KnowledgeBase({
               <tbody className="divide-y divide-slate-800/60">
                 {filteredPages.map((page) => (
                   <tr key={page.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="p-3.5 font-medium text-slate-200 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-400 shrink-0" />
-                      <span className="truncate max-w-[240px]">{page.title || 'Untitled Page'}</span>
+                    <td className="p-3.5 whitespace-nowrap">
+                      {renderSourceBadge(page.source_type)}
+                    </td>
+                    <td className="p-3.5 font-medium text-slate-200">
+                      <div className="flex items-center gap-2">
+                        <FileText className={`w-4 h-4 shrink-0 ${page.source_type?.startsWith('DEMO') ? 'text-indigo-400' : 'text-emerald-400'}`} />
+                        <span className="truncate max-w-[220px]">{page.title || 'Untitled Page'}</span>
+                      </div>
                     </td>
                     <td className="p-3.5">
                       <a
                         href={page.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline flex items-center gap-1 font-mono text-[11px] truncate max-w-[280px]"
+                        className="text-blue-400 hover:underline flex items-center gap-1 font-mono text-[11px] truncate max-w-[240px]"
                       >
                         {page.url} <ExternalLink className="w-3 h-3 shrink-0 text-slate-500" />
                       </a>
@@ -207,7 +271,7 @@ export default function KnowledgeBase({
       )}
 
       {/* Structured Entities Tab */}
-      {subTab === 'entities' && (
+      {sourceFilter === 'entities' && (
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
           <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-4">
             <div className="relative flex-1 max-w-xs">

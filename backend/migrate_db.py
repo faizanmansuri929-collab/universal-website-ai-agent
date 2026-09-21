@@ -17,13 +17,20 @@ except Exception as e:
     print("sector_confidence:", e)
 
 try:
-    cursor.execute("ALTER TABLE agents ADD COLUMN sector_reason TEXT DEFAULT ''")
-    print("Added sector_reason column")
+    cursor.execute("ALTER TABLE pages ADD COLUMN source_type VARCHAR DEFAULT 'REAL_WEBSITE'")
+    print("Added source_type column to pages")
 except Exception as e:
-    print("sector_reason:", e)
+    print("pages.source_type:", e)
+
+try:
+    cursor.execute("ALTER TABLE entities ADD COLUMN source_type VARCHAR DEFAULT 'REAL_WEBSITE'")
+    print("Added source_type column to entities")
+except Exception as e:
+    print("entities.source_type:", e)
 
 conn.commit()
 conn.close()
 
 Base.metadata.create_all(bind=engine)
 print("Database schema successfully synchronized!")
+

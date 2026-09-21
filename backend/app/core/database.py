@@ -10,6 +10,18 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
+def init_db():
+    Base.metadata.create_all(bind=engine)
+    try:
+        with engine.connect() as conn:
+            from sqlalchemy import text
+            conn.execute(text("ALTER TABLE products ADD COLUMN description TEXT;"))
+            conn.commit()
+    except Exception:
+        pass
+
+init_db()
+
 def get_db():
     db = SessionLocal()
     try:

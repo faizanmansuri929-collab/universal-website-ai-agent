@@ -7,6 +7,15 @@ from app.api.api import api_router
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Ensure new columns exist on existing SQLite databases
+try:
+    with engine.connect() as conn:
+        from sqlalchemy import text
+        conn.execute(text("ALTER TABLE products ADD COLUMN description TEXT;"))
+        conn.commit()
+except Exception:
+    pass # Column already exists or table created fresh
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Backend service for crawling websites, creating tenant-isolated knowledge bases, and serving grounded RAG AI agents.",

@@ -14,6 +14,40 @@ from app.services.crawler.engine import execute_crawl_job
 
 router = APIRouter(prefix="/agents", tags=["Agents"])
 
+@router.get("", response_model=List[AgentResponse])
+def list_agents(db: Session = Depends(get_db)):
+    agents = db.query(AgentDB).all()
+    results = []
+    for agent in agents:
+        pages_count = db.query(PageDB).filter(PageDB.agent_id == agent.id).count()
+        entities_count = db.query(EntityDB).filter(EntityDB.agent_id == agent.id).count()
+        latest_job = (
+            db.query(CrawlJobDB)
+            .filter(CrawlJobDB.agent_id == agent.id)
+            .order_by(CrawlJobDB.started_at.desc())
+            .first()
+        )
+        active_job_schema = CrawlJobSchema.from_orm(latest_job) if latest_job else None
+        results.append(AgentResponse(
+            id=agent.id,
+            name=agent.name,
+            website_url=agent.website_url,
+            scope=agent.scope,
+            status=agent.status,
+            primary_color=agent.primary_color,
+            welcome_message=agent.welcome_message,
+            detected_sector=agent.detected_sector or "general",
+            sector_confidence=agent.sector_confidence or 0.75,
+            sector_reason=agent.sector_reason or "",
+            created_at=agent.created_at,
+            last_crawled_at=agent.last_crawled_at,
+            indexed_pages_count=pages_count,
+            structured_entities_count=entities_count,
+            total_chunks_count=pages_count * 4,
+            active_job=active_job_schema
+        ))
+    return results
+
 @router.post("", response_model=AgentResponse)
 async def create_agent(
     req: CreateAgentRequest,

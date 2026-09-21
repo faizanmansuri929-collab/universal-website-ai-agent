@@ -23,6 +23,7 @@ export interface Entity {
   entity_name: string;
   attributes: Record<string, any>;
   source_url: string;
+  source_type?: 'REAL_WEBSITE' | 'DEMO_DATA' | 'DEMO_DOCUMENT';
   created_at: string;
 }
 
@@ -51,6 +52,7 @@ export interface Page {
   title: string;
   char_count: number;
   http_status: number;
+  source_type?: 'REAL_WEBSITE' | 'DEMO_DATA' | 'DEMO_DOCUMENT';
   crawled_at: string;
 }
 
@@ -64,6 +66,7 @@ export interface Citation {
   url: string;
   title: string;
   snippet: string;
+  source_type?: 'REAL_WEBSITE' | 'DEMO_DATA' | 'DEMO_DOCUMENT';
 }
 
 export interface DebugTraceItem {
@@ -71,6 +74,7 @@ export interface DebugTraceItem {
   title: string;
   url: string;
   score: number;
+  source_type?: string;
   matched_entity?: string;
   snippet: string;
 }
@@ -85,13 +89,181 @@ export interface DebugTrace {
   reranked_chunks: DebugTraceItem[];
 }
 
+export interface LeadScore {
+  score: number;
+  status: 'HOT' | 'WARM' | 'COLD';
+  factors: string[];
+  is_demo: boolean;
+}
+
+export interface EnrollmentPrediction {
+  likelihood_percent: number;
+  factors: string[];
+  confidence: string;
+  is_demo: boolean;
+}
+
+export interface BookingSlot {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  type: 'counselor_call' | 'campus_tour' | 'callback';
+  is_available: boolean;
+}
+
+export interface BookingRequest {
+  slot_id: string;
+  name: string;
+  email: string;
+  phone: string;
+  course_interest?: string;
+}
+
+export interface BookingResponse {
+  booking_id: string;
+  status: string;
+  message: string;
+  slot: BookingSlot;
+  is_demo: boolean;
+}
+
+export interface AdmissionLead {
+  id: string;
+  agent_id: string;
+  student_name: string;
+  mobile_number: string;
+  father_name?: string;
+  percentage?: number;
+  annual_income?: string;
+  course_name?: string;
+  preferred_department?: string;
+  email?: string;
+  city?: string;
+  state?: string;
+  entrance_exam?: string;
+  entrance_score?: string;
+  admission_year?: string;
+  hostel_required?: string;
+  lead_score: number;
+  lead_temperature: 'HOT' | 'WARM' | 'COLD';
+  academic_qualification: 'ELIGIBLE' | 'NEEDS_REVIEW' | 'INELIGIBLE';
+  qualification_status?: string;
+  lead_factors?: string[];
+  source: 'REAL_CHAT' | 'DEMO_DATA';
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface CallbackRequest {
+  id: string;
+  lead_id?: string;
+  agent_id: string;
+  student_name: string;
+  mobile_number: string;
+  course?: string;
+  preferred_time: string;
+  status: string;
+  created_at: string;
+}
+
+export interface LeadsSummaryResponse {
+  total_leads: number;
+  hot_leads: number;
+  warm_leads: number;
+  cold_leads: number;
+  real_leads_count: number;
+  demo_leads_count: number;
+  high_income_leads: number;
+  leads: AdmissionLead[];
+}
+
 export interface ChatResponse {
   answer: string;
   citations: Citation[];
   debug_trace?: DebugTrace;
+  lead_score?: LeadScore;
+  enrollment_prediction?: EnrollmentPrediction;
+  admission_lead?: AdmissionLead;
+  apply_url?: string;
+  management_quota_url?: string;
+  suggested_actions?: string[];
+  booking_slots?: BookingSlot[];
+}
+
+export interface HardcodedFAQ {
+  id: string;
+  bot_id: string;
+  intent: string;
+  category: string;
+  questions: string[];
+  answer: string;
+  source_urls: string[];
+  cta_label?: string;
+  cta_url?: string;
+  priority: number;
+  answer_available: boolean;
+  created_at: string;
+}
+
+export interface HardcodedBot {
+  id: string;
+  agent_id?: string;
+  name: string;
+  website_url: string;
+  sector: string;
+  status: 'QUEUED' | 'CRAWLING' | 'GENERATING' | 'READY' | 'UPDATE_REQUIRED' | 'FAILED';
+  version: number;
+  ttl_days: number;
+  welcome_message: string;
+  primary_color: string;
+  error_message?: string;
+  created_at: string;
+  updated_at?: string;
+  expires_at?: string;
+  last_generated_at?: string;
+  is_expired: boolean;
+  faqs_count: number;
+  visitors_count: number;
+}
+
+export interface HardcodedVisitor {
+  id: string;
+  bot_id: string;
+  email: string;
+  mobile: string;
+  student_name?: string;
+  father_name?: string;
+  percentage?: number;
+  annual_income?: string;
+  course?: string;
+  admission_year?: string;
+  source_url?: string;
+  created_at: string;
+}
+
+export interface HardcodedChatResponse {
+  session_id: string;
+  bot_id: string;
+  step: 'ask_email' | 'ask_mobile' | 'active';
+  answer: string;
+  matched_intent?: string;
+  matched_faq_id?: string;
+  citations: Citation[];
+  cta?: { label: string; url: string };
+  suggested_actions?: string[];
+  fallback_triggered: boolean;
+  show_ask_ai: boolean;
+  show_request_callback: boolean;
+  visitor?: HardcodedVisitor;
 }
 
 export const api = {
+  listAgents: async (): Promise<Agent[]> => {
+    const res = await axios.get(`${API_BASE}/agents`);
+    return res.data;
+  },
+
   createAgent: async (url: string, scope: string = 'entire_website', name?: string): Promise<Agent> => {
     const res = await axios.post(`${API_BASE}/agents`, { url, scope, name });
     return res.data;
@@ -131,9 +303,202 @@ export const api = {
     id: string,
     message: string,
     history: { role: string; content: string }[] = [],
+    mode: 'student' | 'teacher' = 'student',
     debug: boolean = false
   ): Promise<ChatResponse> => {
-    const res = await axios.post(`${API_BASE}/agents/${id}/chat`, { message, history, debug });
+    const res = await axios.post(`${API_BASE}/agents/${id}/chat`, { message, history, mode, debug });
     return res.data;
+  },
+
+  getAgentLeads: async (
+    agentId: string,
+    source?: string,
+    temperature?: string,
+    search?: string
+  ): Promise<LeadsSummaryResponse> => {
+    const params = new URLSearchParams();
+    if (source && source !== 'ALL') params.append('source', source);
+    if (temperature && temperature !== 'ALL') params.append('temperature', temperature);
+    if (search) params.append('search', search);
+    const res = await axios.get(`${API_BASE}/agents/${agentId}/leads?${params.toString()}`);
+    return res.data;
+  },
+
+  getLeadDetail: async (agentId: string, leadId: string): Promise<AdmissionLead> => {
+    const res = await axios.get(`${API_BASE}/agents/${agentId}/leads/${leadId}`);
+    return res.data;
+  },
+
+  requestCallback: async (
+    agentId: string,
+    data: { student_name: string; mobile_number: string; course?: string; preferred_time?: string; lead_id?: string }
+  ): Promise<CallbackRequest> => {
+    const res = await axios.post(`${API_BASE}/agents/${agentId}/callback`, data);
+    return res.data;
+  },
+
+  bookSlot: async (agentId: string, data: BookingRequest): Promise<BookingResponse> => {
+    const res = await axios.post(`${API_BASE}/agents/${agentId}/booking`, data);
+    return res.data;
+  },
+
+  // --- Hardcoded Predefined Bot Methods ---
+  createHardcodedBot: async (url: string, name?: string, sector?: string, ttl_days: number = 7): Promise<HardcodedBot> => {
+    const res = await axios.post(`${API_BASE}/hardcoded-bots`, { url, name, sector, ttl_days });
+    return res.data;
+  },
+
+  listHardcodedBots: async (): Promise<HardcodedBot[]> => {
+    const res = await axios.get(`${API_BASE}/hardcoded-bots`);
+    return res.data;
+  },
+
+  getHardcodedBot: async (id: string): Promise<HardcodedBot> => {
+    const res = await axios.get(`${API_BASE}/hardcoded-bots/${id}`);
+    return res.data;
+  },
+
+  getHardcodedBotFaqs: async (id: string, search?: string, category?: string): Promise<HardcodedFAQ[]> => {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (category) params.append('category', category);
+    const res = await axios.get(`${API_BASE}/hardcoded-bots/${id}/faqs?${params.toString()}`);
+    return res.data;
+  },
+
+  regenerateHardcodedBot: async (id: string): Promise<HardcodedBot> => {
+    const res = await axios.post(`${API_BASE}/hardcoded-bots/${id}/regenerate`);
+    return res.data;
+  },
+
+  chatWithHardcodedBot: async (
+    id: string,
+    message: string,
+    sessionId?: string,
+    extraData?: { email?: string; mobile?: string; student_name?: string; course?: string; percentage?: number }
+  ): Promise<HardcodedChatResponse> => {
+    const res = await axios.post(`${API_BASE}/hardcoded-bots/${id}/chat`, {
+      session_id: sessionId,
+      message,
+      ...extraData
+    });
+    return res.data;
+  },
+
+  getHardcodedBotVisitors: async (id: string): Promise<HardcodedVisitor[]> => {
+    const res = await axios.get(`${API_BASE}/hardcoded-bots/${id}/visitors`);
+    return res.data;
+  },
+
+  // --- Product Scraper API Methods ---
+  startScrapeJob: async (url: string, max_products: number = 100): Promise<ScrapeJob> => {
+    const res = await axios.post(`${API_BASE}/scraper/jobs`, {
+      url,
+      max_products
+    });
+    return res.data;
+  },
+
+  listScrapeJobs: async (): Promise<ScrapeJob[]> => {
+    const res = await axios.get(`${API_BASE}/scraper/jobs`);
+    return res.data;
+  },
+
+  getScrapeJob: async (jobId: string): Promise<ScrapeJob> => {
+    const res = await axios.get(`${API_BASE}/scraper/jobs/${jobId}`);
+    return res.data;
+  },
+
+  deleteScrapeJob: async (jobId: string): Promise<void> => {
+    await axios.delete(`${API_BASE}/scraper/jobs/${jobId}`);
+  },
+
+  getJobProducts: async (
+    jobId: string,
+    params?: {
+      search?: string;
+      brand?: string;
+      category?: string;
+      availability?: string;
+      min_price?: number;
+      max_price?: number;
+      sort_by?: string;
+      page?: number;
+      limit?: number;
+    }
+  ): Promise<PaginatedProductsResponse> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.append('search', params.search);
+    if (params?.brand) query.append('brand', params.brand);
+    if (params?.category) query.append('category', params.category);
+    if (params?.availability) query.append('availability', params.availability);
+    if (params?.min_price !== undefined && params?.min_price !== null) query.append('min_price', params.min_price.toString());
+    if (params?.max_price !== undefined && params?.max_price !== null) query.append('max_price', params.max_price.toString());
+    if (params?.sort_by) query.append('sort_by', params.sort_by);
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+
+    const qs = query.toString();
+    const url = `${API_BASE}/scraper/jobs/${jobId}/products${qs ? `?${qs}` : ''}`;
+    const res = await axios.get(url);
+    return res.data;
+  },
+
+  getExportCsvUrl: (jobId: string): string => {
+    return `${API_BASE}/scraper/jobs/${jobId}/export/csv`;
+  },
+
+  getExportExcelUrl: (jobId: string): string => {
+    return `${API_BASE}/scraper/jobs/${jobId}/export/excel`;
   }
 };
+
+// --- Product Scraper Interfaces ---
+export interface ScrapedProduct {
+  id: string;
+  scrape_job_id: string;
+  source_url: string;
+  product_url: string;
+  product_name: string;
+  brand?: string;
+  selling_price?: number;
+  mrp?: number;
+  discount?: string;
+  pack_size?: string;
+  availability: string;
+  image_url?: string;
+  description?: string;
+  category?: string;
+  city?: string;
+  location_context?: string;
+  scraped_at: string;
+}
+
+export interface ScrapeJob {
+  id: string;
+  source_url: string;
+  website: string;
+  status: 'QUEUED' | 'SCRAPING' | 'FETCHING' | 'EXTRACTING' | 'SAVING' | 'COMPLETED' | 'FAILED';
+  progress_message?: string;
+  total_found: number;
+  total_saved: number;
+  total_failed: number;
+  duplicates_removed: number;
+  city?: string;
+  location_context?: string;
+  error_message?: string;
+  started_at: string;
+  completed_at?: string;
+}
+
+export interface PaginatedProductsResponse {
+  items: ScrapedProduct[];
+  total: number;
+  page: number;
+  pages: number;
+  brands: string[];
+  categories: string[];
+}
+
+
+

@@ -291,6 +291,14 @@ async def execute_crawl_job(agent_id: str, job_id: str, db_session_factory):
 
                 await asyncio.sleep(0.05)
 
+        # 11. If Education / College sector, seed clearly marked DEMO datasets for student support & faculty policies
+        if agent.detected_sector == "college":
+            try:
+                from app.services.knowledge.demo_data_seeder import seed_education_demo_data
+                seed_education_demo_data(agent_id, db)
+            except Exception as seeder_err:
+                print(f"[Crawler] Error seeding demo education data: {seeder_err}")
+
         # Job Completed
         job.status = "COMPLETED"
         job.completed_at = datetime.datetime.utcnow()
