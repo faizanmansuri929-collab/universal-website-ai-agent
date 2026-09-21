@@ -30,10 +30,7 @@ def ingest_xyz_knowledge():
             sector_confidence=0.99,
             sector_reason="Official Engineering College Portal with B.Tech, M.Tech, REAP 1023/1050, Fees & Admissions.",
             created_at=datetime.utcnow(),
-            last_crawled_at=datetime.utcnow(),
-            indexed_pages_count=10,
-            structured_entities_count=15,
-            total_chunks_count=20
+            last_crawled_at=datetime.utcnow()
         )
         db.add(agent)
         db.commit()
