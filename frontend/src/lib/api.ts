@@ -450,8 +450,116 @@ export const api = {
 
   getExportExcelUrl: (jobId: string): string => {
     return `${API_BASE}/scraper/jobs/${jobId}/export/excel`;
+  },
+
+  // --- College Live Web Search API Methods ---
+  chatWebSearch: async (
+    message: string,
+    history: { role: string; content: string }[] = [],
+    includeDebug: boolean = true
+  ): Promise<WebSearchChatResponse> => {
+    const res = await axios.post(`${API_BASE}/web-search/chat`, {
+      message,
+      history,
+      include_debug: includeDebug
+    });
+    return res.data;
+  },
+
+  getWebSearchConfig: async (): Promise<WebSearchConfig> => {
+    const res = await axios.get(`${API_BASE}/web-search/config`);
+    return res.data;
+  },
+
+  updateWebSearchConfig: async (data: Partial<WebSearchConfig>): Promise<WebSearchConfig> => {
+    const res = await axios.put(`${API_BASE}/web-search/config`, data);
+    return res.data;
+  },
+
+  getWebSearchSources: async (category?: string, search?: string): Promise<WebSearchSource[]> => {
+    const params = new URLSearchParams();
+    if (category && category !== 'All') params.append('category', category);
+    if (search) params.append('search', search);
+    const res = await axios.get(`${API_BASE}/web-search/sources?${params.toString()}`);
+    return res.data;
+  },
+
+  addWebSearchSource: async (data: { url: string; title?: string; category?: string }): Promise<WebSearchSource> => {
+    const res = await axios.post(`${API_BASE}/web-search/sources`, data);
+    return res.data;
+  },
+
+  updateWebSearchSource: async (id: string, data: { title?: string; category?: string; is_enabled?: boolean }): Promise<WebSearchSource> => {
+    const res = await axios.put(`${API_BASE}/web-search/sources/${id}`, data);
+    return res.data;
+  },
+
+  deleteWebSearchSource: async (id: string): Promise<{ message: string; id: string }> => {
+    const res = await axios.delete(`${API_BASE}/web-search/sources/${id}`);
+    return res.data;
+  },
+
+  testWebSearch: async (query: string, maxSources: number = 3): Promise<WebSearchTestResult> => {
+    const res = await axios.post(`${API_BASE}/web-search/test`, {
+      query,
+      max_sources: maxSources
+    });
+    return res.data;
   }
 };
+
+// --- College Live Web Search Interfaces ---
+export interface WebSearchSource {
+  id: string;
+  url: string;
+  title: string;
+  category: string;
+  is_enabled: boolean;
+  content_snippet?: string;
+  last_fetched_at?: string;
+  created_at: string;
+}
+
+export interface WebSearchConfig {
+  id: string;
+  college_name: string;
+  primary_domain: string;
+  max_sources_per_query: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  cache_ttl_seconds: number;
+  total_sources_count: number;
+  active_sources_count: number;
+  updated_at: string;
+}
+
+export interface WebSearchDebugTrace {
+  user_query: string;
+  detected_intent: string;
+  optimized_search_query: string;
+  sources_returned: Array<{ id?: string; url: string; title?: string; score?: number; category?: string }>;
+  selected_sources: Array<{ url: string; title?: string; score?: number; status?: string }>;
+  ai_link_selection_reason?: string;
+  cache_hit: boolean;
+  processing_time_ms: number;
+}
+
+export interface WebSearchChatResponse {
+  answer: string;
+  sources_used_count: number;
+  sources: Citation[];
+  is_live_searched: boolean;
+  detected_intent: string;
+  debug_trace?: WebSearchDebugTrace;
+}
+
+export interface WebSearchTestResult {
+  query: string;
+  detected_intent: string;
+  optimized_search_query: string;
+  candidate_sources: Array<{ id?: string; url: string; title?: string; score?: number; category?: string }>;
+  selected_sources: Array<{ url: string; title?: string; score?: number; fetch_status?: string }>;
+}
+
 
 // --- Product Scraper Interfaces ---
 export interface ScrapedProduct {

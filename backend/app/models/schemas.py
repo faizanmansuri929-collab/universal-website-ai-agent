@@ -693,4 +693,132 @@ class PaginatedProductsResponse(BaseModel):
     categories: List[str] = []
 
 
+# --- College Web Search Database Models ---
+
+class WebSearchConfigDB(Base):
+    __tablename__ = "web_search_configs"
+
+    id = Column(String, primary_key=True, index=True)
+    college_name = Column(String, default="Poornima University / College")
+    primary_domain = Column(String, default="poornima.org")
+    max_sources_per_query = Column(Integer, default=3)
+    status = Column(String, default="ACTIVE") # ACTIVE, INACTIVE
+    cache_ttl_seconds = Column(Integer, default=600) # 10 minutes
+    system_prompt_override = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+
+class WebSearchSourceDB(Base):
+    __tablename__ = "web_search_sources"
+
+    id = Column(String, primary_key=True, index=True)
+    url = Column(String, nullable=False, unique=True, index=True)
+    title = Column(String, default="")
+    category = Column(String, default="General", index=True)
+    is_enabled = Column(Integer, default=1) # 1=True, 0=False
+    content_snippet = Column(Text, nullable=True)
+    content_full = Column(Text, nullable=True)
+    last_fetched_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class WebSearchCacheDB(Base):
+    __tablename__ = "web_search_caches"
+
+    id = Column(String, primary_key=True, index=True) # Hash of query
+    query = Column(String, nullable=False, index=True)
+    detected_intent = Column(String, default="general")
+    search_query = Column(String, default="")
+    selected_source_ids = Column(JSON, default=list)
+    answer = Column(Text, nullable=False)
+    citations = Column(JSON, default=list)
+    debug_trace = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False, index=True)
+
+
+# --- College Web Search Pydantic Schemas ---
+
+class WebSearchSourceSchema(BaseModel):
+    id: str
+    url: str
+    title: str
+    category: str
+    is_enabled: bool = True
+    content_snippet: Optional[str] = None
+    last_fetched_at: Optional[datetime.datetime] = None
+    created_at: datetime.datetime
+
+    class Config:
+        from_attributes = True
+
+class WebSearchSourceCreate(BaseModel):
+    url: str
+    title: Optional[str] = None
+    category: Optional[str] = "General"
+
+class WebSearchSourceUpdate(BaseModel):
+    title: Optional[str] = None
+    category: Optional[str] = None
+    is_enabled: Optional[bool] = None
+
+class WebSearchConfigSchema(BaseModel):
+    id: str
+    college_name: str
+    primary_domain: str
+    max_sources_per_query: int
+    status: str
+    cache_ttl_seconds: int
+    total_sources_count: int = 0
+    active_sources_count: int = 0
+    updated_at: datetime.datetime
+
+    class Config:
+        from_attributes = True
+
+class WebSearchConfigUpdate(BaseModel):
+    college_name: Optional[str] = None
+    primary_domain: Optional[str] = None
+    max_sources_per_query: Optional[int] = None
+    status: Optional[str] = None
+    cache_ttl_seconds: Optional[int] = None
+    system_prompt_override: Optional[str] = None
+
+class WebSearchDebugTrace(BaseModel):
+    user_query: str
+    detected_intent: str
+    optimized_search_query: str
+    sources_returned: List[Dict[str, Any]] = []
+    selected_sources: List[Dict[str, Any]] = []
+    ai_link_selection_reason: Optional[str] = None
+    cache_hit: bool = False
+    processing_time_ms: float = 0.0
+
+class WebSearchChatRequest(BaseModel):
+    message: str
+    history: Optional[List[ChatMessage]] = []
+    include_debug: bool = True
+
+class WebSearchChatResponse(BaseModel):
+    answer: str
+    sources_used_count: int
+    sources: List[CitationSchema]
+    is_live_searched: bool = True
+    detected_intent: str
+    debug_trace: Optional[WebSearchDebugTrace] = None
+
+class WebSearchTestRequest(BaseModel):
+    query: str
+    max_sources: Optional[int] = 3
+
+class WebSearchTestResponse(BaseModel):
+    query: str
+    detected_intent: str
+    optimized_search_query: str
+    candidate_sources: List[Dict[str, Any]]
+    selected_sources: List[Dict[str, Any]]
+
+
+
 

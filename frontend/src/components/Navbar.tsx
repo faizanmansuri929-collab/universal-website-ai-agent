@@ -25,12 +25,20 @@ export default function Navbar() {
 
         <div className="flex items-center gap-3">
           <Link
+            href="/college-web-search"
+            className="text-xs sm:text-sm font-extrabold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/90 px-3.5 py-1.5 rounded-xl border border-emerald-300 flex items-center gap-1.5 transition-all shadow-sm"
+          >
+            <Globe className="w-4 h-4 text-emerald-600" />
+            <span>Poornima Web Search</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          </Link>
+
+          <Link
             href="/scraper"
             className="text-xs sm:text-sm font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3.5 py-1.5 rounded-xl border border-indigo-200 flex items-center gap-1.5 transition-all shadow-sm"
           >
             <ShoppingBag className="w-4 h-4 text-indigo-600" />
             <span>Product Scraper</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-indigo-600 text-[10px] text-white font-extrabold uppercase">New</span>
           </Link>
 
           <Link
@@ -38,8 +46,7 @@ export default function Navbar() {
             className="text-xs sm:text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100/80 px-3.5 py-1.5 rounded-xl border border-blue-200 flex items-center gap-1.5 transition-all shadow-sm"
           >
             <GraduationCap className="w-4 h-4 text-blue-600" />
-            <span>XYZ College AI Portal</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>XYZ College AI</span>
           </Link>
 
           <Link

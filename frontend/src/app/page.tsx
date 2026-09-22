@@ -13,7 +13,7 @@ import { api, Agent, HardcodedBot } from '@/lib/api';
 
 export default function HomePage() {
   const router = useRouter();
-  const [botMode, setBotMode] = useState<'ai' | 'hardcoded'>('hardcoded');
+  const [botMode, setBotMode] = useState<'ai' | 'hardcoded' | 'web_search'>('web_search');
   const [url, setUrl] = useState('');
   const [scope, setScope] = useState<'entire_website' | 'subpath' | 'current_page'>('entire_website');
   const [sector, setSector] = useState<string>('college');
@@ -32,6 +32,10 @@ export default function HomePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (botMode === 'web_search') {
+      router.push('/college-web-search');
+      return;
+    }
     if (!url.trim()) return;
 
     setLoading(true);
@@ -54,94 +58,130 @@ export default function HomePage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 space-y-10">
-      {/* Featured Spotlight: XYZ College AI Assistant */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-900 rounded-2xl p-6 sm:p-7 text-white shadow-lg relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+      {/* Featured Spotlight: NEW College Live Web Search */}
+      <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-slate-900 rounded-3xl p-6 sm:p-7 text-white shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-5 border border-emerald-500/40">
         <div className="space-y-2 z-10">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur text-xs font-semibold flex items-center gap-1.5 text-blue-100">
-              <Award className="w-3.5 h-3.5 text-amber-300" /> Featured College Intelligence
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 text-xs font-bold flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-emerald-300" /> NEW: College Live Web Search
             </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold">
-              Live Crawled (21 Topics)
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              73 Approved Poornima URLs
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-            XYZ Group of Colleges (XYZCE &amp; XYZIET)
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+            Poornima University &amp; Colleges Live Web Search
           </h2>
-          <p className="text-xs sm:text-sm text-blue-100 max-w-xl leading-relaxed">
-            REAP Codes <strong>1023</strong> &amp; <strong>1050</strong>, NAAC A+, 12 B.Tech specializations, ₹82k core scholarship fees, and verified placements.
+          <p className="text-xs sm:text-sm text-emerald-100 max-w-xl leading-relaxed">
+            OpenAI decides relevant official pages, performs live web searches across <strong>poornima.org</strong>, and generates grounded answers with clickable source links.
+          </p>
+        </div>
+
+        <Link
+          href="/college-web-search"
+          className="z-10 px-5 py-3.5 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-extrabold rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm transition-all shrink-0"
+        >
+          <Bot className="w-4 h-4" />
+          <span>Launch Web Search</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      </div>
+
+      {/* Featured Spotlight: XYZ College AI Assistant */}
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="space-y-1.5 z-10">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur text-xs font-semibold flex items-center gap-1.5 text-blue-100">
+              <Award className="w-3.5 h-3.5 text-amber-300" /> College RAG Portal
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold">
+              REAP 1023 / 1050
+            </span>
+          </div>
+          <h3 className="text-lg sm:text-xl font-bold tracking-tight text-white">
+            XYZ Group of Colleges AI Assistant
+          </h3>
+          <p className="text-xs text-blue-100 max-w-xl leading-relaxed">
+            Autonomous counselor with admissions qualification, branch comparison, and lead scoring.
           </p>
         </div>
 
         <Link
           href="/xyz-college"
-          className="z-10 px-5 py-3 bg-white hover:bg-blue-50 text-blue-900 font-bold rounded-xl shadow-md flex items-center justify-center gap-2 text-sm transition-all shrink-0"
+          className="z-10 px-4 py-2.5 bg-white hover:bg-blue-50 text-blue-900 font-bold rounded-xl shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm transition-all shrink-0"
         >
           <GraduationCap className="w-4 h-4 text-blue-700" />
-          <span>Open XYZ College AI Portal</span>
+          <span>Open AI Portal</span>
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
-
-      {/* NEW: Product Scraper Feature Card */}
-      <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-6 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-indigo-700/50">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-xs font-bold flex items-center gap-1.5">
-              <ShoppingBag className="w-3.5 h-3.5 text-indigo-300" /> New Module: Product Scraper
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-bold">
-              Instamart &amp; E-Commerce
-            </span>
-          </div>
-          <h3 className="text-lg font-bold text-white">
-            Scrape Product Listings into Structured Data &amp; Export
-          </h3>
-          <p className="text-xs text-indigo-100 max-w-xl">
-            Extract product names, selling prices, MRP, discounts, pack sizes, images, and inventory status into a sortable table with 1-click CSV and Excel (.xlsx) export.
-          </p>
-        </div>
-
-        <Link
-          href="/scraper"
-          className="px-5 py-3 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 text-sm transition-all shrink-0"
-        >
-          <ShoppingBag className="w-4 h-4" />
-          <span>Open Product Scraper</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </div>
-
 
       {/* Hero Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold shadow-sm">
-          <Zap className="w-3.5 h-3.5" /> Two High-Performance Chatbot Engines
+          <Zap className="w-3.5 h-3.5" /> 3 High-Performance Chatbot Templates
         </div>
         <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-          Turn Any Website Into An <br />
-          <span className="bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-900 bg-clip-text text-transparent">
-            AI or Predefined Chatbot
+          Universal Website AI Platform <br />
+          <span className="bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Choose Your Chatbot Template
           </span>
         </h1>
         <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          Choose between our <strong>Zero-LLM Hardcoded Predefined Chatbot</strong> (instant speed, predictable FAQ answers, 7-day TTL caching) or our <strong>Live AI RAG Chatbot</strong> (dynamic semantic reasoning).
+          Select between <strong>College Live Web Search</strong>, <strong>Zero-LLM Hardcoded Chatbot</strong>, or <strong>Dynamic AI RAG Chatbot</strong>.
         </p>
       </div>
 
       {/* Main Creation Card */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
-        {/* ENGINE MODE SELECTOR */}
-        <div className="space-y-2">
-          <label className="block text-sm font-bold text-slate-900">
-            Select Chatbot Engine Mode
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+        {/* ENGINE MODE SELECTOR - 3 OPTIONS */}
+        <div className="space-y-3">
+          <label className="block text-sm font-extrabold text-slate-900">
+            Select Chatbot Template
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Hardcoded Option */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Option 1: College Web Search (NEW) */}
+            <button
+              type="button"
+              onClick={() => setBotMode('web_search')}
+              className={`p-4 sm:p-5 rounded-2xl border text-left flex flex-col justify-between transition-all ${
+                botMode === 'web_search'
+                  ? 'border-emerald-600 bg-emerald-50/90 text-emerald-950 ring-2 ring-emerald-500/20 shadow-md'
+                  : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100 text-slate-700'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="font-extrabold text-sm sm:text-base flex items-center gap-1.5 text-emerald-900">
+                    <Globe className="w-4 h-4 text-emerald-600" />
+                    <span>College Web Search</span>
+                  </div>
+                  {botMode === 'web_search' ? (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase">
+                      New
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  OpenAI decides top 1-3 official Poornima pages → live web search on <code>poornima.org</code> → concise answers with verified citations.
+                </p>
+              </div>
+              <div className="mt-3 pt-2.5 border-t border-emerald-200/60 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Live Web Search &bull; 73 URLs &bull; Domain Bound
+              </div>
+            </button>
+
+            {/* Option 2: Hardcoded Option */}
             <button
               type="button"
               onClick={() => setBotMode('hardcoded')}
-              className={`p-5 rounded-2xl border text-left flex flex-col justify-between transition-all ${
+              className={`p-4 sm:p-5 rounded-2xl border text-left flex flex-col justify-between transition-all ${
                 botMode === 'hardcoded'
                   ? 'border-blue-600 bg-blue-50/90 text-blue-950 ring-2 ring-blue-500/20 shadow-md'
                   : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100 text-slate-700'
@@ -149,31 +189,31 @@ export default function HomePage() {
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <div className="font-extrabold text-base flex items-center gap-2 text-blue-900">
-                    <Zap className="w-5 h-5 text-amber-500 fill-amber-500" />
-                    <span>Hardcoded / Predefined Chatbot</span>
+                  <div className="font-extrabold text-sm sm:text-base flex items-center gap-1.5 text-blue-900">
+                    <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
+                    <span>Hardcoded Chatbot</span>
                   </div>
                   {botMode === 'hardcoded' && (
                     <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase">
-                      Selected
+                      Active
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                  One-time OpenAI crawl → Predefined FAQ/Intent dataset saved in DB → <strong>0 LLM calls at runtime</strong>, conversational email &amp; phone lead capture, 7-day TTL.
+                  One-time crawl → Predefined FAQ dataset saved in DB → <strong>0 LLM calls at runtime</strong> with 7-day TTL caching.
                 </p>
               </div>
-              <div className="mt-4 pt-3 border-t border-blue-200/60 flex items-center gap-2 text-[11px] font-semibold text-blue-700">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                Fastest Response &bull; Zero Runtime Cost &bull; Lead Capture
+              <div className="mt-3 pt-2.5 border-t border-blue-200/60 flex items-center gap-1.5 text-[11px] font-semibold text-blue-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                Instant Speed &bull; Zero Runtime Cost &bull; Leads
               </div>
             </button>
 
-            {/* AI RAG Option */}
+            {/* Option 3: AI RAG Option */}
             <button
               type="button"
               onClick={() => setBotMode('ai')}
-              className={`p-5 rounded-2xl border text-left flex flex-col justify-between transition-all ${
+              className={`p-4 sm:p-5 rounded-2xl border text-left flex flex-col justify-between transition-all ${
                 botMode === 'ai'
                   ? 'border-indigo-600 bg-indigo-50/90 text-indigo-950 ring-2 ring-indigo-500/20 shadow-md'
                   : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100 text-slate-700'
@@ -181,23 +221,23 @@ export default function HomePage() {
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <div className="font-extrabold text-base flex items-center gap-2 text-indigo-900">
-                    <Bot className="w-5 h-5 text-indigo-600" />
+                  <div className="font-extrabold text-sm sm:text-base flex items-center gap-1.5 text-indigo-900">
+                    <Bot className="w-4 h-4 text-indigo-600" />
                     <span>AI / RAG Chatbot</span>
                   </div>
                   {botMode === 'ai' && (
                     <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-bold uppercase">
-                      Selected
+                      Active
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                  Vector index + semantic retrieval + live LLM reasoning for every message with real website citations and admissions scoring.
+                  Vector index + semantic retrieval + live LLM reasoning for every message with real website citations.
                 </p>
               </div>
-              <div className="mt-4 pt-3 border-t border-indigo-200/60 flex items-center gap-2 text-[11px] font-semibold text-indigo-700">
+              <div className="mt-3 pt-2.5 border-t border-indigo-200/60 flex items-center gap-1.5 text-[11px] font-semibold text-indigo-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                Dynamic Reasoning &bull; Full Text Retrieval &bull; Student/Teacher Modes
+                Dynamic Reasoning &bull; Full Text Retrieval
               </div>
             </button>
           </div>
