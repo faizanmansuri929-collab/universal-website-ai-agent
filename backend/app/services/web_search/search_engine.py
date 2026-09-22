@@ -149,6 +149,10 @@ Output strictly valid JSON with this exact format:
         except Exception as e:
             print(f"[SearchEngine] LLM URL selection fallback: {e}")
 
+    # Ensure max_sources limit is strictly respected
+    if selected_sources:
+        selected_sources = selected_sources[:max_sources]
+
     # If LLM didn't select or fallback
     if not selected_sources:
         num_to_pick = min(max_sources, len(top_candidates))
