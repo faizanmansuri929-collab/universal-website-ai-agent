@@ -3,20 +3,22 @@ from typing import Dict, Any, List, Optional
 from app.models.schemas import ChatMessage
 
 INTENT_KEYWORD_MAP = {
-    "courses_btech": [
-        "b.tech", "btech", "course", "courses", "branch", "branches", "specialization",
-        "specializations", "program", "programs", "computer science", "cse", "it",
-        "civil", "mechanical", "electrical", "ece", "ai", "data science", "cyber security",
-        "iot", "artificial intelligence", "degree", "b tech"
+    "fees_scholarships": [
+        "fee", "fees", "fee structure", "tuition", "annual fee", "cost", "scholarship",
+        "scholarships", "waiver", "concession", "merit scholarship", "installment", "pay online",
+        "btech fee", "b.tech fee", "btech fees", "b.tech fees", "hostel fee", "hostel fees",
+        "bus fee", "transport fee", "caution money", "development fee", "accounts"
     ],
     "admissions_eligibility": [
         "admission", "admissions", "apply", "eligibility", "reap", "cutoff", "cutoffs",
         "criteria", "how to get admission", "admission process", "lateral entry",
-        "direct admission", "management quota", "jee", "12th percentage"
+        "direct admission", "management quota", "jee", "12th percentage", "intake", "seats"
     ],
-    "fees_scholarships": [
-        "fee", "fees", "fee structure", "tuition", "annual fee", "cost", "scholarship",
-        "scholarships", "waiver", "concession", "merit scholarship", "installment", "pay online"
+    "courses_btech": [
+        "b.tech", "btech", "course", "courses", "branch", "branches", "specialization",
+        "specializations", "program", "programs", "computer science", "cse", "it",
+        "civil", "mechanical", "electrical", "ece", "ai", "data science", "cyber security",
+        "iot", "artificial intelligence", "degree", "b tech", "mtech", "mba", "mca", "bba", "bca", "phd"
     ],
     "placements_recruiters": [
         "placement", "placements", "highest package", "average package", "package", "salary",
@@ -29,7 +31,7 @@ INTENT_KEYWORD_MAP = {
     ],
     "faculty_management": [
         "faculty", "professors", "teachers", "chairman", "director", "management",
-        "hod", "deans", "mentors", "chancellor", "leadership"
+        "hod", "deans", "mentors", "chancellor", "leadership", "staff"
     ],
     "infrastructure_labs": [
         "infrastructure", "labs", "laboratory", "workshop", "auditorium", "campus building",
@@ -45,23 +47,28 @@ INTENT_KEYWORD_MAP = {
     ],
     "contact_location": [
         "contact", "phone", "mobile", "helpline", "email", "address", "location",
-        "where is", "sitapura", "jaipur campus", "reach"
+        "where is", "sitapura", "jaipur campus", "reach", "contact us"
     ],
     "events_fests": [
-        "event", "events", "fest", "cultural", "aarohan", "lakshya", "hackathon",
-        "sports fest", "technical events", "conference", "conferences", "etmepp", "icsme"
+        "event", "events", "fest", "cultural", "aarohan", "lakshya", "pravah", "hackathon",
+        "sports fest", "technical events", "conference", "conferences", "workshop", "seminar"
     ],
     "about_history_accreditation": [
         "about", "history", "legacy", "accreditation", "naac", "aicte", "rtu",
-        "nba", "ranking", "philosophy", "foundation", "poornima advantage"
+        "nba", "ranking", "philosophy", "foundation"
     ]
 }
 
 
-def classify_poornima_intent(user_message: str, history: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
+def classify_college_intent(
+    user_message: str,
+    college_name: str = "College / University",
+    base_domain: str = "college.edu",
+    history: Optional[List[Dict[str, str]]] = None
+) -> Dict[str, Any]:
     """
-    Classifies the user query into Poornima-specific intents, resolves follow-up context,
-    and builds an optimized site-restricted search query.
+    Classifies the user query into college-specific intents, resolves follow-up context,
+    and builds an optimized search query for any college domain.
     """
     history = history or []
     clean_msg = user_message.strip()
@@ -70,11 +77,13 @@ def classify_poornima_intent(user_message: str, history: Optional[List[Dict[str,
     # Context resolution from previous turn
     context_keywords = []
     if history:
-        last_turn = history[-2:] # last 1-2 messages
+        last_turn = history[-2:]
         for item in last_turn:
             txt = (item.get("content") or "").lower()
             if any(k in txt for k in ["b.tech", "btech", "cse", "course", "branch"]):
                 context_keywords.append("B.Tech")
+            if any(k in txt for k in ["fee", "fees", "cost", "scholarship"]):
+                context_keywords.append("Fees")
             if any(k in txt for k in ["placement", "package", "recruiter"]):
                 context_keywords.append("Placement")
             if any(k in txt for k in ["hostel", "mess", "room"]):
@@ -82,7 +91,6 @@ def classify_poornima_intent(user_message: str, history: Optional[List[Dict[str,
             if any(k in txt for k in ["admission", "eligibility", "reap"]):
                 context_keywords.append("Admission")
 
-    # Resolve anaphora / follow-up phrases (e.g. "Which one is related to AI?", "What about hostel fees?", "And placements?")
     is_follow_up = bool(re.search(r'\b(which one|what about|and for|how much for|tell me more|is there any|where is it)\b', lower_msg))
     
     # Score each intent
@@ -92,7 +100,7 @@ def classify_poornima_intent(user_message: str, history: Optional[List[Dict[str,
         for kw in kw_list:
             if " " in kw:
                 if kw in lower_msg:
-                    score += 3
+                    score += 4
             else:
                 if re.search(r'\b' + re.escape(kw) + r'\b', lower_msg):
                     score += 2
@@ -106,53 +114,55 @@ def classify_poornima_intent(user_message: str, history: Optional[List[Dict[str,
             max_score = score
             best_intent = intent
 
-    # Check for greeting or off-topic indicators
-    if lower_msg in ["hi", "hello", "hey", "namaste", "good morning", "good afternoon", "good evening", "hii", "helloo"]:
+    # Check for greeting
+    if lower_msg in ["hi", "hello", "hey", "namaste", "good morning", "good afternoon", "good evening", "hii", "helloo", "hola"]:
         return {
             "intent": "greeting",
-            "search_query": "Poornima University overview programs admissions site:poornima.org",
+            "search_query": f"{college_name} overview programs admissions site:{base_domain}",
             "is_greeting": True,
             "is_off_topic": False,
-            "target_categories": ["Home", "Courses", "Admissions"]
+            "target_categories": ["Home", "Courses", "Admissions", "About"]
         }
 
-    # Off-topic filter
-    off_topic_patterns = [
-        r'\b(harvard|stanford|iit bombay|iit delhi|vit vellore|manipal|bits pilani|amity|lpu|sharda)\b',
-        r'\b(weather in|prime minister|president of|bitcoin|stock market|ipl score|cricket match)\b',
-        r'\b(recipe|movie review|hollywood|bollywood news|iphone 16)\b'
-    ]
-    for otp in off_topic_patterns:
-        if re.search(otp, lower_msg) and "poornima" not in lower_msg:
-            return {
-                "intent": "off_topic",
-                "search_query": "",
-                "is_greeting": False,
-                "is_off_topic": True,
-                "target_categories": []
-            }
+    # Off-topic filter (only triggers if totally unrelated and contains no college-relevant keywords)
+    college_keywords = ["college", "university", "admission", "course", "fee", "fees", "hostel", "placement", "btech", "mtech", "bba", "mba", "faculty", "syllabus", "reap", "rtu", "campus"]
+    has_college_context = any(k in lower_msg for k in college_keywords) or (college_name.lower() in lower_msg) or (base_domain.lower() in lower_msg)
+
+    if not has_college_context:
+        off_topic_patterns = [
+            r'\b(weather in|prime minister|president of|bitcoin|stock market|ipl score|cricket match)\b',
+            r'\b(recipe|movie review|hollywood|bollywood news|iphone 16)\b'
+        ]
+        for otp in off_topic_patterns:
+            if re.search(otp, lower_msg):
+                return {
+                    "intent": "off_topic",
+                    "search_query": "",
+                    "is_greeting": False,
+                    "is_off_topic": True,
+                    "target_categories": []
+                }
 
     # Build optimized search query
-    search_terms = ["Poornima"]
+    search_terms = [college_name.split()[0] if college_name else "College"]
     if context_keywords and is_follow_up:
         search_terms.extend(context_keywords)
     
-    # Clean tokens
-    cleaned_tokens = [w for w in re.findall(r'[a-zA-Z0-9_\-\+]+', clean_msg) if len(w) > 1 and w.lower() not in ["what", "is", "the", "are", "of", "for", "in", "to", "and", "do", "you", "provide", "give", "tell", "me", "about", "which"]]
+    cleaned_tokens = [w for w in re.findall(r'[a-zA-Z0-9_\-\+]+', clean_msg) if len(w) > 1 and w.lower() not in ["what", "is", "the", "are", "of", "for", "in", "to", "and", "do", "you", "provide", "give", "tell", "me", "about", "which", "please"]]
     search_terms.extend(cleaned_tokens[:6])
     
-    optimized_query = f"{' '.join(search_terms)} site:poornima.org"
+    optimized_query = f"{' '.join(search_terms)} site:{base_domain}"
 
     category_map = {
-        "courses_btech": ["Courses", "Admissions"],
-        "admissions_eligibility": ["Admissions", "Courses"],
-        "fees_scholarships": ["Admissions", "Courses"],
-        "placements_recruiters": ["Placements", "About"],
-        "hostel_mess": ["Hostels", "Campus Life"],
-        "faculty_management": ["Faculty", "About"],
-        "infrastructure_labs": ["Infrastructure", "Campus Life"],
-        "academic_calendar_exams": ["Students"],
-        "forms_student_resources": ["Students", "Policies"],
+        "fees_scholarships": ["Admissions", "Courses", "Policies", "About"],
+        "admissions_eligibility": ["Admissions", "Courses", "Policies"],
+        "courses_btech": ["Courses", "Admissions", "Departments"],
+        "placements_recruiters": ["Placements", "About", "Students"],
+        "hostel_mess": ["Hostels", "Campus Life", "Infrastructure"],
+        "faculty_management": ["Faculty", "About", "Departments"],
+        "infrastructure_labs": ["Infrastructure", "Campus Life", "About"],
+        "academic_calendar_exams": ["Students", "Policies"],
+        "forms_student_resources": ["Students", "Policies", "Admissions"],
         "contact_location": ["Contact", "About"],
         "events_fests": ["Events", "Campus Life"],
         "about_history_accreditation": ["About", "Policies"]
@@ -163,5 +173,10 @@ def classify_poornima_intent(user_message: str, history: Optional[List[Dict[str,
         "search_query": optimized_query,
         "is_greeting": False,
         "is_off_topic": False,
-        "target_categories": category_map.get(best_intent, ["General", "Home", "Courses", "Admissions"])
+        "target_categories": category_map.get(best_intent, ["General", "Home", "Courses", "Admissions", "Policies"])
     }
+
+
+def classify_poornima_intent(user_message: str, history: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
+    """Backward-compatible wrapper for Poornima."""
+    return classify_college_intent(user_message, college_name="Poornima University", base_domain="poornima.org", history=history)

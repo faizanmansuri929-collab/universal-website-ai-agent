@@ -10,6 +10,7 @@ import {
   Bot
 } from 'lucide-react';
 import { api, Citation } from '@/lib/api';
+import { MarkdownContent } from '@/components/MarkdownContent';
 
 // Extracted Knowledge Base from live XYZ College Assistant
 const XYZ_COLLEGE_KNOWLEDGE = [
@@ -411,9 +412,11 @@ export default function XYZCollegePortalPage() {
                         : 'bg-white text-slate-800 border border-slate-200/90 rounded-bl-none'
                     }`}
                   >
-                    <div className="text-sm whitespace-pre-line leading-relaxed">
-                      {msg.text}
-                    </div>
+                    <MarkdownContent
+                      content={msg.text}
+                      isUser={msg.role === 'user'}
+                      className={msg.role === 'user' ? 'text-white' : 'text-slate-800'}
+                    />
 
                     {msg.citations && msg.citations.length > 0 && (
                       <div className="pt-2 mt-2 border-t border-slate-100 flex flex-wrap items-center gap-2">

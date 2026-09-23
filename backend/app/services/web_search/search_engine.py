@@ -3,34 +3,68 @@ import json
 import asyncio
 from typing import List, Dict, Any, Tuple, Optional
 from sqlalchemy.orm import Session
-from app.models.schemas import WebSearchSourceDB, WebSearchConfigDB
-from app.services.web_search.intent_router import classify_poornima_intent
-from app.services.web_search.fetcher import fetch_poornima_page
+from app.models.schemas import (
+    CollegeWebSearchProjectDB, CollegeWebSourceDB,
+    WebSearchSourceDB, WebSearchConfigDB
+)
+from app.services.web_search.intent_router import classify_college_intent, classify_poornima_intent
+from app.services.web_search.fetcher import fetch_college_page, fetch_poornima_page
 from app.services.web_search.allowlist import is_allowed_domain_url
 from app.services.llm.provider import get_llm_provider
 
-async def select_and_fetch_poornima_sources(
+
+async def select_and_fetch_college_sources(
+    project_id: str,
     user_message: str,
     history: Optional[List[Dict[str, str]]] = None,
     db: Optional[Session] = None,
-    max_sources: int = 3
-) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], Dict[str, Any], str]:
+    max_sources: int = 5
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], Dict[str, Any], str, str]:
     """
-    1. Understands user query & detects Poornima intent.
-    2. Uses AI Decision + Allowlist Scoring to select top 1-3 most relevant Poornima official URLs.
-    3. Performs live web fetch on those selected URLs.
-    4. Returns (candidate_sources, selected_sources_with_content, intent_info, ai_selection_reason).
+    Generic Multi-College Live Web Search Decision Engine:
+    1. Loads college project metadata (name, base domain) and approved sources.
+    2. Understands user query & detects college intent dynamically.
+    3. Uses AI Decision + Allowlist Scoring across expanded candidate pool.
+    4. Performs live web fetch on all selected URLs (up to 5-6 pages).
+    5. Returns (candidates, selected_with_content, intent_info, ai_reason, college_name).
     """
     history = history or []
-    intent_info = classify_poornima_intent(user_message, history)
     
+    # Load project
+    project = None
+    if db:
+        project = db.query(CollegeWebSearchProjectDB).filter(CollegeWebSearchProjectDB.id == project_id).first()
+    
+    college_name = project.college_name if project else "College / University"
+    base_domain = project.base_domain if project else "poornima.org"
+    
+    # Allow flexible higher max sources if needed (default to at least 5)
+    effective_max = max(max_sources, 5)
+    
+    intent_info = classify_college_intent(user_message, college_name=college_name, base_domain=base_domain, history=history)
+    
+    # Check off-topic
     if intent_info.get("is_off_topic"):
-        return [], [], intent_info, "Query classified as off-topic (outside Poornima domain)."
+        if college_name.lower() in user_message.lower() or base_domain.lower() in user_message.lower():
+            intent_info["is_off_topic"] = False
+        else:
+            return [], [], intent_info, f"Query classified as off-topic (outside {college_name} domain).", college_name
 
-    # 1. Fetch active allowlist sources from database
-    active_sources = db.query(WebSearchSourceDB).filter(WebSearchSourceDB.is_enabled == 1).all() if db else []
+    # 1. Fetch active approved sources for this project from database
+    active_sources = []
+    if db:
+        active_sources = db.query(CollegeWebSourceDB).filter(
+            CollegeWebSourceDB.project_id == project_id,
+            CollegeWebSourceDB.is_enabled == 1
+        ).all()
+        
+        # Fallback to legacy table if project is poornima and no generic sources
+        if not active_sources and project_id in ["proj_poornima", "poornima_config", "poornima"]:
+            legacy_sources = db.query(WebSearchSourceDB).filter(WebSearchSourceDB.is_enabled == 1).all()
+            active_sources = legacy_sources
+
     if not active_sources:
-        return [], [], intent_info, "No active sources found in allowlist."
+        return [], [], intent_info, f"No active approved sources found for project '{project_id}'.", college_name
 
     # 2. Score and rank candidates based on query tokens & intent
     query_lower = user_message.lower()
@@ -39,9 +73,6 @@ async def select_and_fetch_poornima_sources(
 
     scored_candidates = []
     for src in active_sources:
-        if not is_allowed_domain_url(src.url):
-            continue
-        
         url_lower = src.url.lower()
         title_lower = (src.title or "").lower()
         snippet_lower = (src.content_snippet or "").lower()
@@ -55,37 +86,54 @@ async def select_and_fetch_poornima_sources(
         # Title keyword match
         title_tokens = set(re.findall(r'\b\w+\b', title_lower))
         overlap = query_tokens.intersection(title_tokens)
-        score += len(overlap) * 2.5
+        score += len(overlap) * 3.5
 
         # URL slug match
-        url_tokens = set(re.findall(r'\b\w+\b', url_lower.replace("https", "").replace("www", "").replace("poornima", "").replace("org", "")))
+        url_clean = re.sub(r'https?://(www\.)?[^/]+/', '', url_lower)
+        url_tokens = set(re.findall(r'\b\w+\b', url_clean))
         url_overlap = query_tokens.intersection(url_tokens)
-        score += len(url_overlap) * 3.0
+        score += len(url_overlap) * 4.0
 
         # Snippet/keywords overlap
         snippet_tokens = set(re.findall(r'\b\w+\b', snippet_lower))
         snip_overlap = query_tokens.intersection(snippet_tokens)
-        score += len(snip_overlap) * 1.0
+        score += len(snip_overlap) * 1.5
 
-        # Specific high-priority intent boosters
-        if intent_info["intent"] == "courses_btech" and "/btech-at-poornima" in url_lower:
-            score += 4.0
-            # If specific branch is mentioned
-            for branch in ["cyber", "artificial", "data-science", "electrical", "civil", "mechanical", "information-technology", "computer-engineering"]:
-                if branch in query_lower and branch in url_lower:
-                    score += 6.0
-        elif intent_info["intent"] == "placements_recruiters" and "placement" in url_lower:
-            score += 5.0
-            if "statistics" in query_lower and "statistics" in url_lower:
-                score += 5.0
-            if "recruiter" in query_lower and "recruiters" in url_lower:
-                score += 5.0
-        elif intent_info["intent"] == "hostel_mess" and "hostel" in url_lower:
-            score += 5.0
-            if "dining" in query_lower and "dining" in url_lower:
-                score += 4.0
-        elif intent_info["intent"] == "admissions_eligibility" and ("admission" in url_lower or "faqs" in url_lower):
-            score += 5.0
+        # --- Strong Specific Keyword & Intent Boosters ---
+        # 1. Fees & Scholarships
+        if any(k in query_lower for k in ["fee", "fees", "cost", "tuition", "scholarship", "charge", "payment", "account"]):
+            if any(k in url_lower or k in title_lower for k in ["fee", "fees", "tuition", "scholarship", "accounts", "payment", "fee-structure"]):
+                score += 14.0
+            if "btech" in query_lower and any(k in url_lower or k in title_lower for k in ["b-tech", "btech", "admission", "first-year", "1st-year"]):
+                score += 8.0
+
+        # 2. Admissions & Eligibility
+        if any(k in query_lower for k in ["admission", "apply", "eligibility", "reap", "cutoff", "criteria", "seat", "intake"]):
+            if any(k in url_lower or k in title_lower for k in ["admission", "apply", "eligibility", "reap", "seat", "intake", "process"]):
+                score += 12.0
+
+        # 3. Courses & Branches
+        if any(k in query_lower for k in ["btech", "b.tech", "course", "program", "branch", "specialization", "department", "engineering", "mtech", "mba", "bba", "bca"]):
+            if any(k in url_lower or k in title_lower for k in ["course", "btech", "b-tech", "department", "academic", "program", "specialization"]):
+                score += 8.0
+            for branch in ["computer", "cse", "ai", "artificial", "data", "cyber", "electrical", "civil", "mechanical", "it", "electronics", "ece"]:
+                if branch in query_lower and (branch in url_lower or branch in title_lower):
+                    score += 10.0
+
+        # 4. Placements & Recruiters
+        if any(k in query_lower for k in ["placement", "package", "salary", "recruiter", "company", "tpo", "internship"]):
+            if any(k in url_lower or k in title_lower for k in ["placement", "recruiter", "career", "salary", "package", "tpo", "highest-package"]):
+                score += 12.0
+
+        # 5. Hostels & Mess
+        if any(k in query_lower for k in ["hostel", "mess", "dining", "room", "accommodation", "residence"]):
+            if any(k in url_lower or k in title_lower for k in ["hostel", "mess", "dining", "room", "accommodation", "residence", "campus-life"]):
+                score += 12.0
+
+        # 6. Faculty & Contact
+        if any(k in query_lower for k in ["faculty", "professor", "teacher", "hod", "director", "contact", "phone", "email", "address"]):
+            if any(k in url_lower or k in title_lower for k in ["faculty", "staff", "contact", "about", "leadership", "reach-us"]):
+                score += 10.0
 
         if score > 0 or src.category in target_categories:
             scored_candidates.append({
@@ -93,46 +141,47 @@ async def select_and_fetch_poornima_sources(
                 "url": src.url,
                 "title": src.title or src.url,
                 "category": src.category,
+                "source_type": getattr(src, "source_type", "HTML"),
                 "score": round(score, 2),
                 "snippet": src.content_snippet or ""
             })
 
     # Sort descending by score
     scored_candidates.sort(key=lambda x: x["score"], reverse=True)
-    top_candidates = scored_candidates[:8]
+    # Give OpenAI an expanded pool of up to 18-20 candidates
+    top_candidates = scored_candidates[:20]
 
     if not top_candidates:
-        # Fallback to general home/admissions/about
         top_candidates = [
-            {"id": s.id, "url": s.url, "title": s.title, "category": s.category, "score": 1.0, "snippet": ""}
-            for s in active_sources[:3]
+            {"id": s.id, "url": s.url, "title": s.title, "category": s.category, "source_type": getattr(s, "source_type", "HTML"), "score": 1.0, "snippet": ""}
+            for s in active_sources[:5]
         ]
 
-    # 3. OpenAI Dynamic Link Selection (Select 1-3 best pages)
+    # 3. OpenAI Dynamic Link Selection (Select 1 to effective_max best pages)
     selected_sources = []
     ai_reason = "Selected based on highest relevance score and intent alignment."
 
-    # Try LLM-based intelligent selection if LLM available
     llm_provider = get_llm_provider()
     if hasattr(llm_provider, "primary_provider") and llm_provider.primary_provider and len(top_candidates) > 1:
         candidates_listing = "\n".join([
-            f"- [{idx+1}] URL: {c['url']} | Title: {c['title']} | Category: {c['category']}"
-            for idx, c in enumerate(top_candidates[:6])
+            f"- [{idx+1}] URL: {c['url']} | Title: {c['title']} | Category: {c['category']} | Type: {c.get('source_type', 'HTML')}"
+            for idx, c in enumerate(top_candidates[:18])
         ])
         
-        selection_prompt = f"""You are the URL selector for Poornima University / College Web Search.
+        selection_prompt = f"""You are the URL selector for {college_name} Web Search ({base_domain}).
 User Question: "{user_message}"
 Detected Intent: {intent_info['intent']}
 
-Here are top candidate Poornima official URLs:
+Here are top candidate official URLs from the {college_name} sitemap inventory:
 {candidates_listing}
 
 Task:
-Decide which 1 to {max_sources} URLs from the list above are MOST RELEVANT to answer the user's specific inquiry.
-Do NOT choose more than {max_sources} URLs. If 1 or 2 pages are enough, select only 1 or 2.
+Decide which URLs from the list above are MOST RELEVANT to answer the user's inquiry thoroughly.
+You can select between 1 to {effective_max} URLs.
+If the inquiry is multi-faceted or requires comprehensive information (for example: fee structure, admission steps, branch details, hostel fees), select ALL relevant URLs (up to {effective_max} pages) so the answer has complete data without omitting facts.
 
 Output strictly valid JSON with this exact format:
-{{"selected_indexes": [1, 2], "reason": "brief reason for choice"}}"""
+{{"selected_indexes": [1, 2, 3], "reason": "brief explanation for choosing these pages"}}"""
 
         try:
             llm_decision_raw = await llm_provider.generate_response(selection_prompt, system_instruction="You are a strict URL selection analyzer. Output JSON only.")
@@ -149,22 +198,20 @@ Output strictly valid JSON with this exact format:
         except Exception as e:
             print(f"[SearchEngine] LLM URL selection fallback: {e}")
 
-    # Ensure max_sources limit is strictly respected
+    # Enforce effective_max slice
     if selected_sources:
-        selected_sources = selected_sources[:max_sources]
+        selected_sources = selected_sources[:effective_max]
 
     # If LLM didn't select or fallback
     if not selected_sources:
-        num_to_pick = min(max_sources, len(top_candidates))
-        # If top score is substantially higher, pick top 1-2
-        if len(top_candidates) >= 2 and top_candidates[0]["score"] >= 8.0 and top_candidates[1]["score"] < 4.0:
-            num_to_pick = 1
-        elif num_to_pick > 3:
-            num_to_pick = 3
-        selected_sources = top_candidates[:max(1, min(num_to_pick, max_sources))]
+        num_to_pick = min(effective_max, len(top_candidates))
+        selected_sources = top_candidates[:max(1, min(num_to_pick, effective_max))]
 
-    # 4. Perform Live Web Search / Content Fetch on selected 1-3 URLs
-    fetch_tasks = [fetch_poornima_page(s["url"], db) for s in selected_sources]
+    # 4. Perform Live Web Search / Content Fetch on all selected URLs in parallel
+    fetch_tasks = [
+        fetch_college_page(s["url"], db=db, project_id=project_id, base_domain=base_domain)
+        for s in selected_sources
+    ]
     fetched_results = await asyncio.gather(*fetch_tasks)
 
     # Attach fetched live content
@@ -175,9 +222,27 @@ Output strictly valid JSON with this exact format:
             "url": s["url"],
             "title": f.get("title") or s["title"],
             "category": s.get("category", "General"),
+            "source_type": s.get("source_type", "HTML"),
             "score": s.get("score", 1.0),
             "content": f.get("content", ""),
             "fetch_status": f.get("status", "FETCHED")
         })
 
-    return top_candidates, selected_sources_with_content, intent_info, ai_reason
+    return top_candidates, selected_sources_with_content, intent_info, ai_reason, college_name
+
+
+async def select_and_fetch_poornima_sources(
+    user_message: str,
+    history: Optional[List[Dict[str, str]]] = None,
+    db: Optional[Session] = None,
+    max_sources: int = 5
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], Dict[str, Any], str]:
+    """Backward-compatible wrapper for default Poornima project."""
+    cands, selected, info, reason, _ = await select_and_fetch_college_sources(
+        project_id="proj_poornima",
+        user_message=user_message,
+        history=history,
+        db=db,
+        max_sources=max_sources
+    )
+    return cands, selected, info, reason

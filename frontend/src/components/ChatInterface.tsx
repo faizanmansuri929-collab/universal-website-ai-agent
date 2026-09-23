@@ -11,6 +11,7 @@ import {
   api, Citation, DebugTrace, LeadScore, EnrollmentPrediction,
   BookingSlot, BookingResponse, AdmissionLead, CallbackRequest
 } from '@/lib/api';
+import { MarkdownContent } from '@/components/MarkdownContent';
 
 interface Message {
   id: string;
@@ -455,7 +456,11 @@ I can help faculty members with academic calendars, exam duty regulations, leave
                       : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none shadow-md'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <MarkdownContent
+                    content={msg.content}
+                    isUser={msg.role === 'user'}
+                    className={msg.role === 'user' ? 'text-white' : 'text-slate-200'}
+                  />
 
                   {/* ADMISSION CTAs STRIP (for Student Mode) */}
                   {isEducation && mode === 'student' && msg.role === 'assistant' && (

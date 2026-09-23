@@ -29,7 +29,7 @@ export default function Navbar() {
             className="text-xs sm:text-sm font-extrabold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/90 px-3.5 py-1.5 rounded-xl border border-emerald-300 flex items-center gap-1.5 transition-all shadow-sm"
           >
             <Globe className="w-4 h-4 text-emerald-600" />
-            <span>Poornima Web Search</span>
+            <span>College Web Search</span>
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           </Link>
 

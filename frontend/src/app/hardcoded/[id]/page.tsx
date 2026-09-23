@@ -10,6 +10,7 @@ import {
   PhoneCall, Building2, HelpCircle, ArrowRight, ShieldCheck
 } from 'lucide-react';
 import { api, HardcodedBot, HardcodedFAQ, HardcodedVisitor, HardcodedChatResponse, Citation } from '@/lib/api';
+import { MarkdownContent } from '@/components/MarkdownContent';
 
 interface ChatMsg {
   id: string;
@@ -487,7 +488,11 @@ export default function HardcodedBotDashboardPage() {
                           : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none shadow-md'
                       }`}
                     >
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      <MarkdownContent
+                        content={msg.content}
+                        isUser={msg.role === 'user'}
+                        className={msg.role === 'user' ? 'text-white' : 'text-slate-200'}
+                      />
 
                       {/* CALL TO ACTION BUTTON */}
                       {msg.cta && msg.cta.url && (

@@ -808,6 +808,131 @@ class WebSearchChatResponse(BaseModel):
     detected_intent: str
     debug_trace: Optional[WebSearchDebugTrace] = None
 
+# --- Generic Sitemap-Based College Web Search Database Models ---
+
+class CollegeWebSearchProjectDB(Base):
+    __tablename__ = "college_web_search_projects"
+
+    id = Column(String, primary_key=True, index=True)
+    college_name = Column(String, nullable=False, default="College / University")
+    sitemap_url = Column(String, nullable=False)
+    base_domain = Column(String, nullable=False, index=True)
+    status = Column(String, default="READY") # QUEUED, PROCESSING, READY, FAILED
+    progress_message = Column(String, default="Sitemap ready")
+    total_urls = Column(Integer, default=0)
+    active_urls = Column(Integer, default=0)
+    max_sources_per_query = Column(Integer, default=3)
+    cache_ttl_seconds = Column(Integer, default=600)
+    system_prompt_override = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    sources = relationship("CollegeWebSourceDB", back_populates="project", cascade="all, delete-orphan")
+
+
+class CollegeWebSourceDB(Base):
+    __tablename__ = "college_web_sources"
+
+    id = Column(String, primary_key=True, index=True)
+    project_id = Column(String, ForeignKey("college_web_search_projects.id"), nullable=False, index=True)
+    url = Column(String, nullable=False, index=True)
+    title = Column(String, default="")
+    category = Column(String, default="General", index=True)
+    source_type = Column(String, default="HTML") # HTML, PDF
+    is_enabled = Column(Integer, default=1) # 1=True, 0=False
+    content_snippet = Column(Text, nullable=True)
+    content_full = Column(Text, nullable=True)
+    discovered_at = Column(DateTime, default=datetime.datetime.utcnow)
+    last_fetched_at = Column(DateTime, nullable=True)
+
+    project = relationship("CollegeWebSearchProjectDB", back_populates="sources")
+
+
+class CollegeWebSearchCacheDB(Base):
+    __tablename__ = "college_web_search_caches"
+
+    id = Column(String, primary_key=True, index=True) # Hash of project_id + query
+    project_id = Column(String, nullable=False, index=True)
+    query = Column(String, nullable=False, index=True)
+    detected_intent = Column(String, default="general")
+    search_query = Column(String, default="")
+    selected_source_ids = Column(JSON, default=list)
+    answer = Column(Text, nullable=False)
+    citations = Column(JSON, default=list)
+    debug_trace = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False, index=True)
+
+
+# --- Generic College Web Search Pydantic Schemas ---
+
+class CreateCollegeProjectRequest(BaseModel):
+    college_name: Optional[str] = "College / University"
+    sitemap_url: str
+    max_sources_per_query: Optional[int] = 3
+
+class CollegeProjectResponse(BaseModel):
+    id: str
+    college_name: str
+    sitemap_url: str
+    base_domain: str
+    status: str
+    progress_message: Optional[str] = ""
+    total_urls: int = 0
+    active_urls: int = 0
+    max_sources_per_query: int = 3
+    cache_ttl_seconds: int = 600
+    created_at: datetime.datetime
+    updated_at: Optional[datetime.datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class CollegeSourceSchema(BaseModel):
+    id: str
+    project_id: str
+    url: str
+    title: str
+    category: str
+    source_type: str = "HTML"
+    is_enabled: bool = True
+    content_snippet: Optional[str] = None
+    last_fetched_at: Optional[datetime.datetime] = None
+    discovered_at: datetime.datetime
+
+    class Config:
+        from_attributes = True
+
+class CollegeSourceUpdate(BaseModel):
+    title: Optional[str] = None
+    category: Optional[str] = None
+    is_enabled: Optional[bool] = None
+
+class RebuildSourcesResponse(BaseModel):
+    project_id: str
+    status: str
+    message: str
+    total_urls: int
+    added_count: int
+    removed_count: int
+    active_urls: int
+
+class CollegeChatRequest(BaseModel):
+    project_id: Optional[str] = "proj_poornima"
+    message: str
+    history: Optional[List[ChatMessage]] = []
+    include_debug: bool = True
+
+class CollegeChatResponse(BaseModel):
+    project_id: str
+    college_name: str
+    answer: str
+    sources_used_count: int
+    sources: List[CitationSchema]
+    is_live_searched: bool = True
+    detected_intent: str
+    debug_trace: Optional[WebSearchDebugTrace] = None
+
 class WebSearchTestRequest(BaseModel):
     query: str
     max_sources: Optional[int] = 3
@@ -816,8 +941,9 @@ class WebSearchTestResponse(BaseModel):
     query: str
     detected_intent: str
     optimized_search_query: str
-    candidate_sources: List[Dict[str, Any]]
-    selected_sources: List[Dict[str, Any]]
+    candidate_sources: List[Dict[str, Any]] = []
+    selected_sources: List[Dict[str, Any]] = []
+
 
 
 

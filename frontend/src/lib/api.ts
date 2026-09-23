@@ -505,8 +505,137 @@ export const api = {
       max_sources: maxSources
     });
     return res.data;
+  },
+
+  // --- Generic Sitemap-Based Multi-College Methods ---
+  createCollegeProject: async (collegeName: string, sitemapUrl: string, maxSources: number = 3): Promise<CollegeWebSearchProject> => {
+    const res = await axios.post(`${API_BASE}/web-search/projects`, {
+      college_name: collegeName,
+      sitemap_url: sitemapUrl,
+      max_sources_per_query: maxSources
+    });
+    return res.data;
+  },
+
+  listCollegeProjects: async (): Promise<CollegeWebSearchProject[]> => {
+    const res = await axios.get(`${API_BASE}/web-search/projects`);
+    return res.data;
+  },
+
+  getCollegeProject: async (projectId: string): Promise<CollegeWebSearchProject> => {
+    const res = await axios.get(`${API_BASE}/web-search/projects/${projectId}`);
+    return res.data;
+  },
+
+  rebuildCollegeProjectSources: async (projectId: string): Promise<RebuildSourcesResult> => {
+    const res = await axios.post(`${API_BASE}/web-search/projects/${projectId}/rebuild`);
+    return res.data;
+  },
+
+  getCollegeProjectSources: async (
+    projectId: string,
+    category?: string,
+    search?: string,
+    sourceType?: string
+  ): Promise<CollegeWebSource[]> => {
+    const params = new URLSearchParams();
+    if (category && category !== 'All') params.append('category', category);
+    if (search) params.append('search', search);
+    if (sourceType && sourceType !== 'All') params.append('source_type', sourceType);
+    const res = await axios.get(`${API_BASE}/web-search/projects/${projectId}/sources?${params.toString()}`);
+    return res.data;
+  },
+
+  updateCollegeProjectSource: async (
+    projectId: string,
+    sourceId: string,
+    data: { title?: string; category?: string; is_enabled?: boolean }
+  ): Promise<CollegeWebSource> => {
+    const res = await axios.put(`${API_BASE}/web-search/projects/${projectId}/sources/${sourceId}`, data);
+    return res.data;
+  },
+
+  deleteCollegeProjectSource: async (projectId: string, sourceId: string): Promise<void> => {
+    await axios.delete(`${API_BASE}/web-search/projects/${projectId}/sources/${sourceId}`);
+  },
+
+  chatCollegeProject: async (
+    projectId: string,
+    message: string,
+    history: { role: string; content: string }[] = [],
+    includeDebug: boolean = true
+  ): Promise<CollegeChatResponse> => {
+    const res = await axios.post(`${API_BASE}/web-search/projects/${projectId}/chat`, {
+      project_id: projectId,
+      message,
+      history,
+      include_debug: includeDebug
+    });
+    return res.data;
+  },
+
+  testCollegeProjectSearch: async (
+    projectId: string,
+    query: string,
+    maxSources: number = 3
+  ): Promise<WebSearchTestResult> => {
+    const res = await axios.post(`${API_BASE}/web-search/projects/${projectId}/test`, {
+      query,
+      max_sources: maxSources
+    });
+    return res.data;
   }
 };
+
+// --- Generic Multi-College Project Interfaces ---
+export interface CollegeWebSearchProject {
+  id: string;
+  college_name: string;
+  sitemap_url: string;
+  base_domain: string;
+  status: 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+  progress_message?: string;
+  total_urls: number;
+  active_urls: number;
+  max_sources_per_query: number;
+  cache_ttl_seconds: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface CollegeWebSource {
+  id: string;
+  project_id: string;
+  url: string;
+  title: string;
+  category: string;
+  source_type: 'HTML' | 'PDF';
+  is_enabled: boolean;
+  content_snippet?: string;
+  last_fetched_at?: string;
+  discovered_at: string;
+}
+
+export interface RebuildSourcesResult {
+  project_id: string;
+  status: string;
+  message: string;
+  total_urls: number;
+  added_count: number;
+  removed_count: number;
+  active_urls: number;
+}
+
+export interface CollegeChatResponse {
+  project_id: string;
+  college_name: string;
+  answer: string;
+  sources_used_count: number;
+  sources: Citation[];
+  is_live_searched: boolean;
+  detected_intent: string;
+  debug_trace?: WebSearchDebugTrace;
+}
 
 // --- College Live Web Search Interfaces ---
 export interface WebSearchSource {
@@ -559,6 +688,7 @@ export interface WebSearchTestResult {
   candidate_sources: Array<{ id?: string; url: string; title?: string; score?: number; category?: string }>;
   selected_sources: Array<{ url: string; title?: string; score?: number; fetch_status?: string }>;
 }
+
 
 
 // --- Product Scraper Interfaces ---

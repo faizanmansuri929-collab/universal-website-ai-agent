@@ -3,8 +3,10 @@ import datetime
 from urllib.parse import urlparse
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
-from app.core.database import SessionLocal
-from app.models.schemas import WebSearchSourceDB, WebSearchConfigDB
+from app.models.schemas import (
+    WebSearchSourceDB, WebSearchConfigDB,
+    CollegeWebSearchProjectDB, CollegeWebSourceDB
+)
 
 ALLOWED_DOMAIN = "poornima.org"
 
@@ -463,8 +465,29 @@ def is_allowed_domain_url(url: str) -> bool:
 
 
 def seed_poornima_allowlist(db: Session) -> int:
-    """Seeds the 73 initial approved Poornima sources into database if not present."""
-    # 1. Ensure config row exists
+    """Seeds the initial Poornima project and its 73 approved sources into database if not present."""
+    now = datetime.datetime.utcnow()
+
+    # 1. Ensure Generic CollegeWebSearchProjectDB row exists for Poornima
+    generic_project = db.query(CollegeWebSearchProjectDB).filter(CollegeWebSearchProjectDB.id == "proj_poornima").first()
+    if not generic_project:
+        generic_project = CollegeWebSearchProjectDB(
+            id="proj_poornima",
+            college_name="Poornima University & Colleges",
+            sitemap_url="https://www.poornima.org/sitemap.xml",
+            base_domain="poornima.org",
+            status="READY",
+            progress_message="73 official Poornima pages loaded and active",
+            total_urls=73,
+            active_urls=73,
+            max_sources_per_query=3,
+            cache_ttl_seconds=600,
+            created_at=now
+        )
+        db.add(generic_project)
+        db.commit()
+
+    # 2. Ensure legacy WebSearchConfigDB row exists
     config = db.query(WebSearchConfigDB).filter(WebSearchConfigDB.id == "poornima_config").first()
     if not config:
         config = WebSearchConfigDB(
@@ -478,31 +501,49 @@ def seed_poornima_allowlist(db: Session) -> int:
         db.add(config)
         db.commit()
 
-    # 2. Check existing count
-    existing_count = db.query(WebSearchSourceDB).count()
-    if existing_count >= 70:
-        return existing_count
+    # 3. Check existing generic sources count
+    existing_generic_count = db.query(CollegeWebSourceDB).filter(CollegeWebSourceDB.project_id == "proj_poornima").count()
+    if existing_generic_count < 70:
+        for idx, item in enumerate(INITIAL_73_POORNIMA_SOURCES, start=1):
+            url = item["url"]
+            if not is_allowed_domain_url(url):
+                continue
+            
+            exists = db.query(CollegeWebSourceDB).filter(
+                CollegeWebSourceDB.project_id == "proj_poornima",
+                CollegeWebSourceDB.url == url
+            ).first()
 
-    # 3. Add any missing initial sources
-    added = 0
-    for idx, item in enumerate(INITIAL_73_POORNIMA_SOURCES, start=1):
-        url = item["url"]
-        if not is_allowed_domain_url(url):
-            continue
-        
-        exists = db.query(WebSearchSourceDB).filter(WebSearchSourceDB.url == url).first()
-        if not exists:
-            new_source = WebSearchSourceDB(
-                id=f"p_src_{idx}_{uuid.uuid4().hex[:6]}",
-                url=url,
-                title=item["title"],
-                category=item["category"],
-                is_enabled=1,
-                content_snippet=" | ".join(item["keywords"]),
-                created_at=datetime.datetime.utcnow()
-            )
-            db.add(new_source)
-            added += 1
+            if not exists:
+                new_src = CollegeWebSourceDB(
+                    id=f"csrc_poornima_{idx}_{uuid.uuid4().hex[:6]}",
+                    project_id="proj_poornima",
+                    url=url,
+                    title=item["title"],
+                    category=item["category"],
+                    source_type="HTML",
+                    is_enabled=1,
+                    content_snippet=" | ".join(item["keywords"]),
+                    discovered_at=now
+                )
+                db.add(new_src)
 
-    db.commit()
-    return db.query(WebSearchSourceDB).count()
+        # Also seed legacy table
+        for idx, item in enumerate(INITIAL_73_POORNIMA_SOURCES, start=1):
+            url = item["url"]
+            exists_leg = db.query(WebSearchSourceDB).filter(WebSearchSourceDB.url == url).first()
+            if not exists_leg:
+                new_leg = WebSearchSourceDB(
+                    id=f"p_src_{idx}_{uuid.uuid4().hex[:6]}",
+                    url=url,
+                    title=item["title"],
+                    category=item["category"],
+                    is_enabled=1,
+                    content_snippet=" | ".join(item["keywords"]),
+                    created_at=now
+                )
+                db.add(new_leg)
+
+        db.commit()
+
+    return db.query(CollegeWebSourceDB).filter(CollegeWebSourceDB.project_id == "proj_poornima").count()

@@ -14,7 +14,8 @@ import { api, Agent, HardcodedBot } from '@/lib/api';
 export default function HomePage() {
   const router = useRouter();
   const [botMode, setBotMode] = useState<'ai' | 'hardcoded' | 'web_search'>('web_search');
-  const [url, setUrl] = useState('');
+  const [collegeName, setCollegeName] = useState('Poornima University');
+  const [url, setUrl] = useState('https://www.poornima.org/sitemap.xml');
   const [scope, setScope] = useState<'entire_website' | 'subpath' | 'current_page'>('entire_website');
   const [sector, setSector] = useState<string>('college');
   const [ttlDays, setTtlDays] = useState<number>(7);
@@ -32,17 +33,19 @@ export default function HomePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (botMode === 'web_search') {
-      router.push('/college-web-search');
-      return;
-    }
     if (!url.trim()) return;
 
     setLoading(true);
     setError('');
 
     try {
-      if (botMode === 'hardcoded') {
+      if (botMode === 'web_search') {
+        const project = await api.createCollegeProject(
+          collegeName.trim() || 'College / University',
+          url.trim()
+        );
+        router.push(`/college-web-search?project_id=${project.id}`);
+      } else if (botMode === 'hardcoded') {
         const bot = await api.createHardcodedBot(url.trim(), undefined, sector, ttlDays);
         router.push(`/hardcoded/${bot.id}`);
       } else {
@@ -67,14 +70,14 @@ export default function HomePage() {
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              73 Approved Poornima URLs
+              Dynamic Sitemap Discovery
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-            Poornima University &amp; Colleges Live Web Search
+            College &amp; University Live Web Search
           </h2>
           <p className="text-xs sm:text-sm text-emerald-100 max-w-xl leading-relaxed">
-            OpenAI decides relevant official pages, performs live web searches across <strong>poornima.org</strong>, and generates grounded answers with clickable source links.
+            AI dynamically discovers official pages from the college sitemap, performs live web searches across official domains, and generates grounded answers with clickable source links.
           </p>
         </div>
 
@@ -168,12 +171,12 @@ export default function HomePage() {
                   )}
                 </div>
                 <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                  OpenAI decides top 1-3 official Poornima pages → live web search on <code>poornima.org</code> → concise answers with verified citations.
+                  OpenAI dynamically selects top official pages from college sitemap → live web search on domain → concise answers with verified citations.
                 </p>
               </div>
               <div className="mt-3 pt-2.5 border-t border-emerald-200/60 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                Live Web Search &bull; 73 URLs &bull; Domain Bound
+                Live Web Search &bull; Dynamic Sitemap &bull; Domain Bound
               </div>
             </button>
 
