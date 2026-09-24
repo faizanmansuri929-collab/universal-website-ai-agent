@@ -153,7 +153,7 @@ async def create_voice_realtime_session(
                         "prefix_padding_ms": 300,
                         "silence_duration_ms": 800,
                         "create_response": True,
-                        "interrupt_response": True
+                        "interrupt_response": False
                     }
                 },
                 "output": {

@@ -262,6 +262,14 @@ function CollegeVoiceSearchContent() {
     }
   };
 
+  const setMicrophoneMuted = (muted: boolean) => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks().forEach(track => {
+        track.enabled = !muted;
+      });
+    }
+  };
+
   // Realtime Event Dispatcher
   const handleRealtimeEvent = async (event: any, dc: RTCDataChannel) => {
     console.log('[Realtime Event]', event.type, event);
@@ -276,9 +284,11 @@ function CollegeVoiceSearchContent() {
         break;
 
       case 'input_audio_buffer.speech_stopped':
+        // Temporarily pause mic transmission while processing to prevent noise interruption
+        setMicrophoneMuted(true);
         setVoiceState('searching');
         setStatusDetail(
-          language === 'hi' ? 'सवाल समझा जा रहा है...' : 'Processing speech...'
+          language === 'hi' ? '⏳ सवाल समझा जा रहा है... (माइक रुका हुआ है)' : '⏳ Processing speech... (Mic paused)'
         );
         break;
 
@@ -288,6 +298,8 @@ function CollegeVoiceSearchContent() {
           const rawText = event.transcript.trim();
           const userText = rawText.replace(/[\uFFFD\u0000-\u001F]/g, '').trim();
           if (userText) {
+            // Ensure mic stays muted while executing search
+            setMicrophoneMuted(true);
             setMessages(prev => {
               // Avoid duplicate user message if already added
               if (prev.length > 0 && prev[prev.length - 1].role === 'user' && prev[prev.length - 1].content === userText) {
@@ -322,6 +334,8 @@ function CollegeVoiceSearchContent() {
           processedCallIdsRef.current.add(callId);
 
           try {
+            // Ensure mic stays locked
+            setMicrophoneMuted(true);
             const args = JSON.parse(funcArgs || '{}');
             const query = args.query || 'general college info';
             setVoiceState('searching');
@@ -423,7 +437,7 @@ function CollegeVoiceSearchContent() {
         const delta = event.delta || event.text || '';
         setVoiceState('speaking');
         setStatusDetail(
-          language === 'hi' ? '🔊 बोलकर उत्तर दिया जा रहा है...' : '🔊 Speaking answer (Full details shown below)...'
+          language === 'hi' ? '🔊 उत्तर दिया जा रहा है... (माइक रुका हुआ है)' : '🔊 Speaking answer... (Mic on hold)'
         );
         setCurrentAssistantText(prev => prev + delta);
         break;
@@ -458,11 +472,15 @@ function CollegeVoiceSearchContent() {
 
       case 'response.audio.done':
       case 'response.done':
+        // Re-enable microphone ONLY after full answer and audio are completely finished
+        if (!isMuted) {
+          setMicrophoneMuted(false);
+        }
         setVoiceState('listening');
         setStatusDetail(
           language === 'hi'
-            ? `सुन रहे हैं... ${activeProject?.college_name || 'कॉलेज'} के बारे में और पूछें।`
-            : `Listening... Ask another question about ${activeProject?.college_name || 'the college'}.`
+            ? `🎙 सुन रहे हैं... ${activeProject?.college_name || 'कॉलेज'} के बारे में अगला सवाल पूछें।`
+            : `🎙 Listening... Ask your next question about ${activeProject?.college_name || 'the college'}.`
         );
         // If there is any leftover currentAssistantText that wasn't committed
         if (currentAssistantText && currentAssistantText.trim()) {
@@ -489,6 +507,9 @@ function CollegeVoiceSearchContent() {
         break;
 
       case 'error':
+        if (!isMuted) {
+          setMicrophoneMuted(false);
+        }
         console.error('Realtime Server Error Event:', event);
         if (event.error?.message) {
           setStatusDetail(`Error: ${event.error.message}`);
