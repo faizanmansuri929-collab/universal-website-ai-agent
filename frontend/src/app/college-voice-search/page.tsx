@@ -142,9 +142,11 @@ function CollegeVoiceSearchContent() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
+            echoCancellation: { ideal: true },
+            noiseSuppression: { ideal: true },
+            autoGainControl: { ideal: true },
+            sampleRate: { ideal: 24000 },
+            channelCount: { ideal: 1 }
           }
         });
         localStreamRef.current = stream;

@@ -144,11 +144,14 @@ async def create_voice_realtime_session(
                         "model": "whisper-1",
                         "language": whisper_lang
                     },
+                    "noise_reduction": {
+                        "type": "near_field"
+                    },
                     "turn_detection": {
                         "type": "server_vad",
-                        "threshold": 0.5,
+                        "threshold": 0.75,
                         "prefix_padding_ms": 300,
-                        "silence_duration_ms": 500,
+                        "silence_duration_ms": 800,
                         "create_response": True,
                         "interrupt_response": True
                     }
