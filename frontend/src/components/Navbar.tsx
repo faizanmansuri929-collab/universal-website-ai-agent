@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Bot, Sparkles, Globe, GraduationCap, ShoppingBag } from 'lucide-react';
+import { Bot, Sparkles, Globe, GraduationCap, ShoppingBag, Mic } from 'lucide-react';
 
 
 export default function Navbar() {
@@ -25,12 +25,21 @@ export default function Navbar() {
 
         <div className="flex items-center gap-3">
           <Link
+            href="/college-voice-search"
+            className="text-xs sm:text-sm font-extrabold text-teal-800 bg-teal-50 hover:bg-teal-100/90 px-3.5 py-1.5 rounded-xl border border-teal-300 flex items-center gap-1.5 transition-all shadow-sm"
+          >
+            <Mic className="w-4 h-4 text-teal-600 animate-pulse" />
+            <span>College Voice Search</span>
+            <span className="px-1.5 py-0.2 rounded bg-amber-200 text-amber-900 text-[10px] font-black">BETA</span>
+          </Link>
+
+          <Link
             href="/college-web-search"
             className="text-xs sm:text-sm font-extrabold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/90 px-3.5 py-1.5 rounded-xl border border-emerald-300 flex items-center gap-1.5 transition-all shadow-sm"
           >
             <Globe className="w-4 h-4 text-emerald-600" />
             <span>College Web Search</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900 text-[10px] font-bold">BETA</span>
           </Link>
 
           <Link
@@ -39,6 +48,7 @@ export default function Navbar() {
           >
             <ShoppingBag className="w-4 h-4 text-indigo-600" />
             <span>Product Scraper</span>
+            <span className="px-1.5 py-0.2 rounded bg-indigo-200 text-indigo-900 text-[10px] font-bold">BETA</span>
           </Link>
 
           <Link
@@ -47,6 +57,7 @@ export default function Navbar() {
           >
             <GraduationCap className="w-4 h-4 text-blue-600" />
             <span>XYZ College AI</span>
+            <span className="px-1.5 py-0.2 rounded bg-blue-200 text-blue-900 text-[10px] font-bold">BETA</span>
           </Link>
 
           <Link

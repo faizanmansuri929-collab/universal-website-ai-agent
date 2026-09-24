@@ -6,14 +6,14 @@ import Link from 'next/link';
 import {
   Globe, ArrowRight, Layers, ShieldCheck, Zap, Bot, RefreshCw,
   FileText, GraduationCap, Award, CheckCircle2, Sparkles, Server,
-  Database, Users, Clock, Flame, Building2, ShoppingBag
+  Database, Users, Clock, Flame, Building2, ShoppingBag, Mic, Radio
 } from 'lucide-react';
 
 import { api, Agent, HardcodedBot } from '@/lib/api';
 
 export default function HomePage() {
   const router = useRouter();
-  const [botMode, setBotMode] = useState<'ai' | 'hardcoded' | 'web_search'>('web_search');
+  const [botMode, setBotMode] = useState<'ai' | 'hardcoded' | 'web_search' | 'voice_search'>('web_search');
   const [collegeName, setCollegeName] = useState('Poornima University');
   const [url, setUrl] = useState('https://www.poornima.org/sitemap.xml');
   const [scope, setScope] = useState<'entire_website' | 'subpath' | 'current_page'>('entire_website');
@@ -39,7 +39,13 @@ export default function HomePage() {
     setError('');
 
     try {
-      if (botMode === 'web_search') {
+      if (botMode === 'voice_search') {
+        const project = await api.createCollegeProject(
+          collegeName.trim() || 'College / University',
+          url.trim()
+        );
+        router.push(`/college-voice-search?project_id=${project.id}`);
+      } else if (botMode === 'web_search') {
         const project = await api.createCollegeProject(
           collegeName.trim() || 'College / University',
           url.trim()
@@ -61,12 +67,48 @@ export default function HomePage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 space-y-10">
-      {/* Featured Spotlight: NEW College Live Web Search */}
+      {/* Featured Spotlight: NEW College Voice Web Search */}
+      <div className="bg-gradient-to-r from-teal-900 via-emerald-900 to-slate-900 rounded-3xl p-6 sm:p-7 text-white shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-5 border border-teal-500/40">
+        <div className="space-y-2 z-10">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-teal-500/30 text-teal-200 border border-teal-400/30 text-xs font-bold flex items-center gap-1.5">
+              <Mic className="w-3.5 h-3.5 text-teal-300" /> College Voice Web Search
+            </span>
+            <span className="px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black tracking-wider uppercase">
+              BETA
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold flex items-center gap-1">
+              <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+              Indian Accent WebRTC
+            </span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+            Spoken College Voice Assistant
+          </h2>
+          <p className="text-xs sm:text-sm text-teal-100 max-w-xl leading-relaxed">
+            Speak naturally with the AI voice assistant in Indian English or Hindi. It searches live college sitemaps and displays complete fee tables and branch details on screen.
+          </p>
+        </div>
+
+        <Link
+          href="/college-voice-search"
+          className="z-10 px-5 py-3.5 bg-teal-400 hover:bg-teal-300 text-slate-950 font-extrabold rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm transition-all shrink-0"
+        >
+          <Mic className="w-4 h-4" />
+          <span>Launch Voice Search</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      </div>
+
+      {/* Featured Spotlight: College Live Web Search (Text) */}
       <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-slate-900 rounded-3xl p-6 sm:p-7 text-white shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-5 border border-emerald-500/40">
         <div className="space-y-2 z-10">
           <div className="flex flex-wrap items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 text-xs font-bold flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-emerald-300" /> NEW: College Live Web Search
+              <Globe className="w-3.5 h-3.5 text-emerald-300" /> College Text Web Search
+            </span>
+            <span className="px-2 py-0.5 rounded bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold uppercase">
+              BETA
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -122,29 +164,65 @@ export default function HomePage() {
 
       {/* Hero Header */}
       <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold shadow-sm">
-          <Zap className="w-3.5 h-3.5" /> 3 High-Performance Chatbot Templates
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold shadow-sm">
+          <Zap className="w-3.5 h-3.5 text-teal-600" /> 4 High-Performance Chatbot Templates
         </div>
         <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
           Universal Website AI Platform <br />
-          <span className="bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-teal-600 via-emerald-600 to-blue-600 bg-clip-text text-transparent">
             Choose Your Chatbot Template
           </span>
         </h1>
         <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          Select between <strong>College Live Web Search</strong>, <strong>Zero-LLM Hardcoded Chatbot</strong>, or <strong>Dynamic AI RAG Chatbot</strong>.
+          Select between <strong>College Voice Web Search</strong>, <strong>College Text Web Search</strong>, <strong>Zero-LLM Hardcoded Chatbot</strong>, or <strong>Dynamic AI RAG Chatbot</strong>.
         </p>
       </div>
 
       {/* Main Creation Card */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-        {/* ENGINE MODE SELECTOR - 3 OPTIONS */}
+        {/* ENGINE MODE SELECTOR - 4 OPTIONS */}
         <div className="space-y-3">
           <label className="block text-sm font-extrabold text-slate-900">
             Select Chatbot Template
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Option 1: College Web Search (NEW) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Option 1: College Voice Web Search (NEW) */}
+            <button
+              type="button"
+              onClick={() => setBotMode('voice_search')}
+              className={`p-4 sm:p-5 rounded-2xl border text-left flex flex-col justify-between transition-all ${
+                botMode === 'voice_search'
+                  ? 'border-teal-600 bg-teal-50/90 text-teal-950 ring-2 ring-teal-500/20 shadow-md'
+                  : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100 text-slate-700'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="font-extrabold text-sm sm:text-base flex items-center gap-1.5 text-teal-900">
+                    <Mic className="w-4 h-4 text-teal-600" />
+                    <span>College Voice Web Search</span>
+                  </div>
+                  {botMode === 'voice_search' ? (
+                    <span className="px-2 py-0.5 rounded-full bg-teal-600 text-white text-[10px] font-bold uppercase">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-800 text-[10px] font-bold uppercase">
+                      New Voice
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  OpenAI Realtime voice conversation → user speaks → live college web search → concise spoken response with citations.
+                </p>
+              </div>
+              <div className="mt-3 pt-2.5 border-t border-teal-200/60 flex items-center gap-1.5 text-[11px] font-semibold text-teal-700">
+                <Radio className="w-3 h-3 text-teal-600 animate-pulse" />
+                Realtime WebRTC &bull; Spoken Audio &bull; Live Search
+              </div>
+            </button>
+
+            {/* Option 2: College Text Web Search */}
             <button
               type="button"
               onClick={() => setBotMode('web_search')}
@@ -160,27 +238,23 @@ export default function HomePage() {
                     <Globe className="w-4 h-4 text-emerald-600" />
                     <span>College Web Search</span>
                   </div>
-                  {botMode === 'web_search' ? (
+                  {botMode === 'web_search' && (
                     <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase">
                       Active
-                    </span>
-                  ) : (
-                    <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase">
-                      New
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                  OpenAI dynamically selects top official pages from college sitemap → live web search on domain → concise answers with verified citations.
+                  Text input → OpenAI selects top official pages from college sitemap → live web search on domain → grounded answers with citations.
                 </p>
               </div>
               <div className="mt-3 pt-2.5 border-t border-emerald-200/60 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                Live Web Search &bull; Dynamic Sitemap &bull; Domain Bound
+                Live Text Search &bull; Dynamic Sitemap &bull; Citations
               </div>
             </button>
 
-            {/* Option 2: Hardcoded Option */}
+            {/* Option 3: Hardcoded Option */}
             <button
               type="button"
               onClick={() => setBotMode('hardcoded')}
@@ -212,7 +286,7 @@ export default function HomePage() {
               </div>
             </button>
 
-            {/* Option 3: AI RAG Option */}
+            {/* Option 4: AI RAG Option */}
             <button
               type="button"
               onClick={() => setBotMode('ai')}

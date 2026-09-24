@@ -584,8 +584,61 @@ export const api = {
       max_sources: maxSources
     });
     return res.data;
+  },
+
+  // --- College Voice Web Search API Methods ---
+  createVoiceSession: async (projectId: string = 'proj_poornima', voice: string = 'alloy', language: string = 'en-IN'): Promise<VoiceSessionResponse> => {
+    const res = await axios.post(`${API_BASE}/college-voice/session`, {
+      project_id: projectId,
+      voice,
+      language
+    });
+    return res.data;
+  },
+
+  executeVoiceSearchTool: async (projectId: string = 'proj_poornima', query: string, maxSources: number = 3, language: string = 'en-IN'): Promise<VoiceSearchToolResponse> => {
+    const res = await axios.post(`${API_BASE}/college-voice/search-tool`, {
+      project_id: projectId,
+      query,
+      max_sources: maxSources,
+      language
+    });
+    return res.data;
   }
 };
+
+// --- College Voice Web Search Interfaces ---
+export interface VoiceSessionResponse {
+  client_secret: {
+    value: string;
+    expires_at?: number;
+  };
+  session_id: string;
+  project_id: string;
+  college_name: string;
+  base_domain: string;
+  model: string;
+  voice: string;
+  language: string;
+}
+
+export interface VoiceSourceItem {
+  title: string;
+  url: string;
+  score?: number;
+  category?: string;
+}
+
+export interface VoiceSearchToolResponse {
+  query: string;
+  college_name: string;
+  detected_intent: string;
+  sources_used_count: number;
+  sources: VoiceSourceItem[];
+  context: string;
+  summary_for_voice: string;
+  detailed_answer: string;
+}
 
 // --- Generic Multi-College Project Interfaces ---
 export interface CollegeWebSearchProject {
