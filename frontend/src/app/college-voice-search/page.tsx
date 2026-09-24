@@ -701,6 +701,16 @@ function CollegeVoiceSearchContent() {
                 <option value="shimmer" className="bg-slate-900 text-white">Clear (Shimmer)</option>
               </select>
             </div>
+
+            {/* Switch to Text Search Link */}
+            <Link
+              href={`/college-web-search?project_id=${activeProjectId || ''}`}
+              className="bg-slate-900/90 hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-teal-500/30 text-xs font-bold text-teal-200 flex items-center gap-1.5 transition-all shadow-sm"
+              title="Switch to Text Live Web Search"
+            >
+              <Globe className="w-3.5 h-3.5 text-teal-400" />
+              <span>Text Chat</span>
+            </Link>
           </div>
         </div>
 

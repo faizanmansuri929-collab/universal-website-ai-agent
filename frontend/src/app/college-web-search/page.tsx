@@ -8,7 +8,7 @@ import {
   RefreshCw, Search, Layers, Sliders, ChevronDown, ChevronUp, AlertCircle,
   Clock, Database, ArrowRight, Zap, Info, Plus, Trash2, Check, X, BookOpen,
   GraduationCap, Building2, Briefcase, Home as HomeIcon, FileText, Settings,
-  FolderPlus, Filter, CheckCircle
+  FolderPlus, Filter, CheckCircle, Mic
 } from 'lucide-react';
 import {
   api, CollegeWebSearchProject, CollegeWebSource,
@@ -413,6 +413,13 @@ function CollegeWebSearchContent() {
               >
                 <Bot className="w-3.5 h-3.5" /> Live Chat
               </button>
+              <Link
+                href={`/college-voice-search?project_id=${activeProjectId || ''}`}
+                className="px-3.5 py-2 rounded-xl text-xs font-extrabold bg-teal-500 hover:bg-teal-400 text-slate-950 transition-all flex items-center gap-1.5 shadow-md shadow-teal-500/20"
+                title="Switch to Realtime Spoken Voice Mode"
+              >
+                <Mic className="w-3.5 h-3.5 animate-pulse" /> Voice Mode
+              </Link>
               <button
                 onClick={() => setActiveTab('admin')}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
