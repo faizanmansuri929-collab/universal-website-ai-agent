@@ -144,7 +144,8 @@ async def create_voice_realtime_session(
                 "input": {
                     "transcription": {
                         "model": "whisper-1",
-                        "language": whisper_lang
+                        "language": whisper_lang,
+                        "prompt": f"{college_name}, Poornima University, B.Tech, CSE, Computer Engineering, Artificial Intelligence, AI, Data Science, Mechanical, Civil, Electrical, MBA, BCA, MCA, hostel fees, mess, tuition fee structure, admission eligibility, REAP, cutoffs, placements, highest package, Jaipur, Rajasthan, Hinglish."
                     },
                     "noise_reduction": {
                         "type": "near_field"
