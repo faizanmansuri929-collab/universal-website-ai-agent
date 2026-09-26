@@ -599,11 +599,11 @@ function CollegeVoiceSearchContent() {
   };
 
   const suggestedQuestions = language === 'hi' ? [
-    'B.Tech में कौन-कौन से कोर्सेस उपलब्ध हैं?',
-    'इंजीनियरिंग का फीस स्ट्रक्चर क्या है?',
-    'कॉलेज के प्लेसमेंट्स और हाईएस्ट पैकेज के बारे में बताएं।',
-    'हॉस्टल और मेस की क्या सुविधाएं हैं?',
-    'एडमिशन प्रक्रिया और पात्रता (Eligibility) क्या है?'
+    'B.Tech CSE ki total fees structure kya hai?',
+    'Engineering admission process aur eligibility criteria kya hai?',
+    'Campus placements aur highest package kitna gaya hai?',
+    'Hostel aur mess ki kya facilities aur room charges hain?',
+    'Kaun-kaun si engineering branches aur courses available hain?'
   ] : [
     'What B.Tech courses are available?',
     'What is the detailed fee structure for engineering?',
@@ -704,7 +704,7 @@ function CollegeVoiceSearchContent() {
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
-                <span>🇮🇳 हिंदी</span>
+                <span>🇮🇳 Hinglish / हिंदी</span>
               </button>
             </div>
 
@@ -767,12 +767,12 @@ function CollegeVoiceSearchContent() {
               {voiceState === 'disconnected' && <Radio className="w-4 h-4 text-slate-400" />}
               
               <span className="uppercase tracking-wider">
-                {voiceState === 'speaking' && (language === 'hi' ? 'बोलकर उत्तर दिया जा रहा है' : 'Speaking Spoken Answer')}
-                {voiceState === 'listening' && (language === 'hi' ? 'सुन रहे हैं... बोलिए' : 'Listening... Speak Now')}
-                {voiceState === 'searching' && (language === 'hi' ? 'वेबसाइट पर खोज जारी है' : 'Searching College Website')}
-                {voiceState === 'connecting' && (language === 'hi' ? 'कनेक्ट हो रहा है' : 'Connecting Realtime')}
+                {voiceState === 'speaking' && (language === 'hi' ? 'Uttar diya ja raha hai' : 'Speaking Spoken Answer')}
+                {voiceState === 'listening' && (language === 'hi' ? 'Sun rahe hain... Boliye' : 'Listening... Speak Now')}
+                {voiceState === 'searching' && (language === 'hi' ? 'Website par search jari hai' : 'Searching College Website')}
+                {voiceState === 'connecting' && (language === 'hi' ? 'Connecting Realtime...' : 'Connecting Realtime')}
                 {voiceState === 'error' && 'Session Error'}
-                {voiceState === 'disconnected' && (language === 'hi' ? 'तैयार / निष्क्रिय' : 'Ready / Idle')}
+                {voiceState === 'disconnected' && (language === 'hi' ? 'Ready / Idle' : 'Ready / Idle')}
               </span>
             </span>
           </div>

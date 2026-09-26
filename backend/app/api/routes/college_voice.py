@@ -68,9 +68,10 @@ def build_voice_system_prompt(college_name: str, base_domain: str, language: str
     lang_instruction = ""
     if language == "hi":
         lang_instruction = """
-LANGUAGE & ACCENT (HINDI / HINGLISH):
-- You MUST speak strictly in clear, polite, natural Hindi / Hinglish with an authentic Indian accent.
-- Example: "पूर्णिमा में B.Tech CSE की सालाना फीस और एलिजिबिलिटी की पूरी जानकारी नीचे स्क्रीन पर टेबल में दिखाई दे रही है।"
+LANGUAGE & SCRIPT (NATURAL HINGLISH):
+- You MUST speak and respond strictly in natural, conversational Hinglish (Hindi words written in clean Roman/Latin alphabet script, e.g. "Poornima University me B.Tech CSE ki annual tuition fee approximately 1.21 Lakhs hai. Full fee breakdown tables aur admission eligibility details aapki screen par show ho rahi hain.").
+- Do NOT output in Devanagari script. Use everyday Indian conversational Hinglish in clean Roman letters.
+- Keep the spoken tone polite, natural, and helpful with an authentic Indian accent.
 """
     else:
         lang_instruction = """
@@ -89,9 +90,9 @@ CRITICAL MANDATORY INSTRUCTIONS:
 3. CONCISE SPOKEN SUMMARY (CRITICAL FOR AUDIO):
    - When the tool returns data, speak a short 1 to 2 sentence polite conversational summary aloud (10 to 35 words).
    - Inform the user that full detailed breakdown tables, branch lists, and verified official links are displayed on their screen.
-   - Example: "B.Tech tuition fee is approximately 1.5 Lakhs per year. I have displayed the complete detailed fee breakdown table and official links on your screen!"
+   - Example: "B.Tech tuition fee is approximately 1.21 Lakhs per year. I have displayed the complete detailed fee breakdown table and official links on your screen!"
 4. NEVER read long tables, fee rows, or raw URLs aloud. Keep speech crisp and natural.
-5. User speech is in English or Hindi. Never output or transcribe into unrelated languages or strange scripts.
+5. User speech is in English or Hinglish (Hindi in Roman script). Never output or transcribe into unrelated languages or strange scripts.
 {lang_instruction}
 """
 
@@ -104,7 +105,7 @@ async def create_voice_realtime_session(
     """
     Creates an OpenAI Realtime WebRTC session with ephemeral client credentials:
     1. Validates the college project and approved domain.
-    2. Builds specialized concise voice instructions with Indian English or Hindi tone.
+    2. Builds specialized concise voice instructions with Indian English or Hinglish tone.
     3. Configures `college_web_search` function tool for live search retrieval.
     4. Authenticates with OpenAI and returns ephemeral client secret for browser WebRTC.
     """
@@ -130,7 +131,8 @@ async def create_voice_realtime_session(
     model_name = "gpt-realtime-mini"
     selected_voice = payload.voice if payload.voice in ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse"] else "alloy"
 
-    whisper_lang = "en" if language == "en-IN" else "hi"
+    # For both English and Hinglish, using 'en' transcription forces Whisper to output Roman/Latin alphabet characters (Hinglish)
+    whisper_lang = "en"
 
     session_payload = {
         "session": {
@@ -282,7 +284,7 @@ async def execute_voice_search_tool(
     # Generate concise spoken summary for the audio model
     spoken_summary = ""
     if language == "hi":
-        spoken_summary = f"{chat_res.college_name} की आधिकारिक वेबसाइट से पूरी जानकारी और फीस टेबल नीचे स्क्रीन पर दिखाई दे रही है।"
+        spoken_summary = f"{chat_res.college_name} ki official website se verified information aur fees tables niche screen par show ho rahi hain."
     else:
         spoken_summary = f"I found the verified details and fee breakdown from {chat_res.college_name}'s official website and displayed the complete table on your screen."
     
