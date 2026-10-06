@@ -26,7 +26,7 @@ class CreateVoiceSessionRequest(BaseModel):
     project_id: Optional[str] = "proj_poornima"
     voice: Optional[str] = "verse" # alloy, ash, ballad, coral, echo, sage, shimmer, verse
     language: Optional[str] = "en-IN" # en-IN, hi
-    vad_threshold: Optional[float] = 0.85
+    vad_threshold: Optional[float] = 0.68
     silence_duration_ms: Optional[int] = 450
     mode: Optional[str] = "hands_free" # hands_free, push_to_talk
 
@@ -101,6 +101,10 @@ CRITICAL MANDATORY DOMAIN-CHECK RULES:
    - Inform the user that full detailed breakdown tables, branch lists, and verified official links are displayed on their screen.
    - Example: "B.Tech tuition fee is approximately 1.21 Lakhs per year. I have displayed the complete detailed fee breakdown table and official links on your screen!"
 6. User speech is in English or Hinglish (Hindi in Roman script). Never output or transcribe into unrelated languages or strange scripts.
+7. AMBIENT CROWD & BACKGROUND CHATTER REJECTION (CRITICAL):
+   - You must ONLY respond when a primary user directly addresses you with an admission or college query regarding {college_name}.
+   - If the detected audio is ambient room noise, distant crowd chatter, third-party room conversation (e.g., casual talk like 'kya kar raha hai', 'arrey suno', 'theek hai', 'chalo', laughter, side murmurs, background TV, phone calls, or fragmented words):
+     YOU MUST REMAIN COMPLETELY SILENT. DO NOT CALL ANY TOOL. Output nothing so that background crowd chatter is strictly ignored.
 {lang_instruction}
 """
 
@@ -139,11 +143,14 @@ async def create_voice_realtime_session(
     model_name = "gpt-realtime-mini"
     selected_voice = payload.voice if payload.voice in ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse"] else "alloy"
 
-    # For both English and Hinglish, using 'en' transcription forces Whisper to output Roman/Latin alphabet characters (Hinglish)
-    whisper_lang = "en"
+    # Safe VAD threshold validation (respects provided value and bounds inside 0.0 - 1.0)
+    vad_threshold = float(payload.vad_threshold) if payload.vad_threshold is not None else 0.5
+    vad_threshold = max(0.0, min(1.0, vad_threshold))
 
-    vad_threshold = payload.vad_threshold if (payload.vad_threshold is not None and payload.vad_threshold < 0.8) else 0.5
-    silence_ms = payload.silence_duration_ms if (payload.silence_duration_ms is not None and payload.silence_duration_ms >= 500) else 650
+    # Safe silence duration validation (defaults to 650ms for natural conversation, bounded 200 - 3000ms)
+    silence_ms = int(payload.silence_duration_ms) if payload.silence_duration_ms is not None else 650
+    silence_ms = max(200, min(3000, silence_ms))
+
     turn_detection_config = None if payload.mode == "push_to_talk" else {
         "type": "server_vad",
         "threshold": vad_threshold,
@@ -152,6 +159,54 @@ async def create_voice_realtime_session(
         "create_response": True,
         "interrupt_response": False
     }
+
+    # Focused Multilingual Transcription Prompt (Hindi, English, Hinglish with domain preservation)
+    transcription_prompt = (
+        f"The speaker is an Indian student or parent speaking in Hindi, English, or mixed conversational Hinglish "
+        f"with English academic and technical terms about {college_name}. "
+        f"Accurately preserve exact college names, course names (B.Tech, BTech, B Tech, M.Tech, BCA, MCA, MBA), "
+        f"branch names (CSE, Computer Science, Computer Engineering, Artificial Intelligence, AI, Data Science, Mechanical, Civil, Electrical), "
+        f"admission terms (REAP, JEE, CUET, eligibility, cutoff), fees (tuition fee, hostel, mess, registration fee, application fee, scholarship, numbers, Lakhs), "
+        f"placements (package, highest package), and locations (Jaipur, Rajasthan)."
+    )
+
+    # Transcription Keywords for literal terms likely to be misrecognized
+    transcription_keywords = list(dict.fromkeys([
+        college_name,
+        "Poornima University",
+        "B.Tech",
+        "BTech",
+        "B Tech",
+        "CSE",
+        "Computer Science",
+        "Computer Engineering",
+        "Artificial Intelligence",
+        "AI",
+        "Data Science",
+        "Mechanical",
+        "Civil",
+        "Electrical",
+        "MBA",
+        "BCA",
+        "MCA",
+        "M.Tech",
+        "hostel",
+        "mess",
+        "tuition fee",
+        "admission",
+        "eligibility",
+        "REAP",
+        "JEE",
+        "CUET",
+        "cutoff",
+        "placement",
+        "package",
+        "scholarship",
+        "registration fee",
+        "application fee",
+        "Jaipur",
+        "Rajasthan"
+    ]))
 
     session_payload = {
         "session": {
@@ -162,9 +217,10 @@ async def create_voice_realtime_session(
             "audio": {
                 "input": {
                     "transcription": {
-                        "model": "whisper-1",
-                        "language": whisper_lang,
-                        "prompt": f"{college_name}, Poornima University, B.Tech, CSE, Computer Engineering, Artificial Intelligence, AI, Data Science, Mechanical, Civil, Electrical, MBA, BCA, MCA, hostel fees, mess, tuition fee structure, admission eligibility, REAP, cutoffs, placements, highest package, Jaipur, Rajasthan, Hinglish."
+                        "model": "gpt-transcribe",
+                        "languages": ["hi", "en"],
+                        "prompt": transcription_prompt,
+                        "keywords": transcription_keywords
                     },
                     "turn_detection": turn_detection_config
                 },
@@ -206,9 +262,19 @@ async def create_voice_realtime_session(
             )
             
             if resp.status_code != 200:
-                # Fallback to gpt-realtime-2.1 if mini fails
+                err_text = resp.text
+                print(f"[OpenAI Session Warning] Status {resp.status_code}: {err_text}")
+
+                # Safe fallback if gpt-transcribe or specific parameters are not supported
                 fallback_payload = dict(session_payload)
-                fallback_payload["session"]["model"] = "gpt-realtime-2.1"
+                if "gpt-transcribe" in err_text or "transcription" in err_text or "languages" in err_text:
+                    fallback_payload["session"]["audio"]["input"]["transcription"] = {
+                        "model": "whisper-1",
+                        "prompt": transcription_prompt
+                    }
+                else:
+                    fallback_payload["session"]["model"] = "gpt-realtime-2.1"
+
                 resp_fallback = await client.post(
                     "https://api.openai.com/v1/realtime/client_secrets",
                     headers={
@@ -227,14 +293,14 @@ async def create_voice_realtime_session(
                         project_id=project_id,
                         college_name=college_name,
                         base_domain=base_domain,
-                        model="gpt-realtime-2.1",
+                        model=fallback_payload["session"].get("model", model_name),
                         voice=selected_voice,
                         language=language
                     )
-                
+
                 raise HTTPException(
                     status_code=resp.status_code,
-                    detail=f"OpenAI Realtime Session creation failed: {resp.text}"
+                    detail=f"OpenAI Realtime Session creation failed: {err_text}"
                 )
 
             data = resp.json()

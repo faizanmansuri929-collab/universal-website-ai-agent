@@ -7,7 +7,7 @@ import {
   Mic, MicOff, Volume2, Globe, Sparkles, ExternalLink, ShieldCheck,
   RefreshCw, AlertCircle, CheckCircle2, ChevronRight, Zap, PhoneOff,
   Radio, BookOpen, GraduationCap, Building2, Layers, MessageSquare,
-  ArrowRight, Languages, Sparkle, FileText, Check
+  ArrowRight, Languages, Sparkle, FileText, Check, Lock
 } from 'lucide-react';
 import {
   api, CollegeWebSearchProject, VoiceSourceItem,
@@ -41,9 +41,17 @@ function CollegeVoiceSearchContent() {
   // Language & Voice State
   const [language, setLanguage] = useState<'en-IN' | 'hi'>('en-IN');
   const [selectedVoice, setSelectedVoice] = useState('verse'); // Verse/Alloy with Indian prompt
-  const [voiceMode, setVoiceMode] = useState<'hands_free' | 'push_to_talk'>('hands_free');
+  const [voiceMode, setVoiceMode] = useState<'crowd_filter' | 'push_to_talk' | 'hands_free'>('crowd_filter');
   const [isPushTalking, setIsPushTalking] = useState(false);
   const isPushTalkingRef = useRef(false);
+
+  // Proximity & Noise Gate State
+  const [audioLevel, setAudioLevel] = useState<number>(0); // 0 to 100%
+  const [isGateOpen, setIsGateOpen] = useState<boolean>(false);
+  const [gateThresholdPct, setGateThresholdPct] = useState<number>(7); // Default 7% (balanced for room noise)
+  const gateThresholdPctRef = useRef<number>(7);
+  gateThresholdPctRef.current = gateThresholdPct;
+  const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
 
   // Realtime Voice Session State
   const [voiceState, setVoiceState] = useState<VoiceState>('disconnected');
@@ -51,18 +59,35 @@ function CollegeVoiceSearchContent() {
   const [isMuted, setIsMuted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
+  // Turn-Taking Half-Duplex State (Locks mic while bot processes, searches, or speaks until answer is completely finished)
+  const [isBotResponding, setIsBotResponding] = useState<boolean>(false);
+  const isBotRespondingRef = useRef<boolean>(false);
+  const isToolExecutingRef = useRef<boolean>(false);
+  const botFinishTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const voiceStateRef = useRef<VoiceState>('disconnected');
+  voiceStateRef.current = voiceState;
+
   // Conversation Transcripts & Sources
   const [messages, setMessages] = useState<VoiceMessageItem[]>([]);
   const [currentAssistantText, setCurrentAssistantText] = useState<string>('');
   const [pendingToolResult, setPendingToolResult] = useState<VoiceSearchToolResponse | null>(null);
 
-  // WebRTC Refs
+  // WebRTC & Web Audio Refs
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const outboundTrackRef = useRef<MediaStreamTrack | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const processedCallIdsRef = useRef<Set<string>>(new Set());
+
+  // Web Audio Noise Gate Refs
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const destinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const gateAnimFrameRef = useRef<number | null>(null);
+  const lastSpeechTimeRef = useRef<number>(0);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -134,7 +159,105 @@ function CollegeVoiceSearchContent() {
     }
   };
 
+  const startNoiseGate = (
+    audioCtx: AudioContext,
+    analyser: AnalyserNode,
+    mode: 'crowd_filter' | 'push_to_talk' | 'hands_free'
+  ) => {
+    if (gateAnimFrameRef.current) {
+      cancelAnimationFrame(gateAnimFrameRef.current);
+      gateAnimFrameRef.current = null;
+    }
+
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    const holdTimeMs = 320; // 320ms hold window (closes cleanly after user stops speaking)
+
+    const checkLevel = () => {
+      if (!analyserRef.current || audioCtx.state === 'closed') return;
+
+      analyser.getByteTimeDomainData(dataArray);
+      let sumSq = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        const norm = (dataArray[i] - 128) / 128;
+        sumSq += norm * norm;
+      }
+      const rms = Math.sqrt(sumSq / dataArray.length);
+      const levelPct = Math.min(100, Math.round(rms * 1000));
+      setAudioLevel(levelPct);
+
+      // Calibrated threshold from gateThresholdPct (e.g. 4% -> 0.004)
+      const threshold = Math.max(0.001, (gateThresholdPctRef.current || 4) / 1000);
+
+      if (isBotRespondingRef.current) {
+        // While bot is processing, web-searching, or speaking:
+        // OUTBOUND MIC MUST BE STRICTLY MUTED & GATE CLOSED!
+        if (outboundTrackRef.current && outboundTrackRef.current.enabled) {
+          outboundTrackRef.current.enabled = false;
+        }
+        setIsGateOpen(false);
+      } else if (mode === 'push_to_talk') {
+        const shouldBeOpen = isPushTalkingRef.current;
+        if (outboundTrackRef.current && outboundTrackRef.current.enabled !== shouldBeOpen) {
+          outboundTrackRef.current.enabled = shouldBeOpen;
+        }
+        setIsGateOpen(shouldBeOpen);
+      } else if (mode === 'crowd_filter') {
+        const now = Date.now();
+        let shouldBeOpen = false;
+
+        if (rms >= threshold) {
+          lastSpeechTimeRef.current = now;
+          shouldBeOpen = true;
+        } else if (now - lastSpeechTimeRef.current < holdTimeMs) {
+          // Still in speech hold window between words
+          shouldBeOpen = true;
+        } else {
+          // Room murmur or ambient crowd below threshold -> MUTE outbound track!
+          shouldBeOpen = false;
+        }
+
+        if (outboundTrackRef.current && outboundTrackRef.current.enabled !== shouldBeOpen) {
+          outboundTrackRef.current.enabled = shouldBeOpen;
+        }
+        setIsGateOpen(shouldBeOpen);
+      } else {
+        // Quiet room (hands_free): continuous track unless manually muted
+        const shouldBeOpen = !isMuted;
+        if (outboundTrackRef.current && outboundTrackRef.current.enabled !== shouldBeOpen) {
+          outboundTrackRef.current.enabled = shouldBeOpen;
+        }
+        setIsGateOpen(rms >= 0.012);
+      }
+
+      gateAnimFrameRef.current = requestAnimationFrame(checkLevel);
+    };
+
+    gateAnimFrameRef.current = requestAnimationFrame(checkLevel);
+  };
+
   const handleEndSession = () => {
+    if (botFinishTimeoutRef.current) {
+      clearTimeout(botFinishTimeoutRef.current);
+      botFinishTimeoutRef.current = null;
+    }
+    isBotRespondingRef.current = false;
+    setIsBotResponding(false);
+    isToolExecutingRef.current = false;
+
+    if (gateAnimFrameRef.current) {
+      cancelAnimationFrame(gateAnimFrameRef.current);
+      gateAnimFrameRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    gainNodeRef.current = null;
+    destinationRef.current = null;
+    setAudioLevel(0);
+    setIsGateOpen(false);
+
     if (dataChannelRef.current) {
       dataChannelRef.current.close();
       dataChannelRef.current = null;
@@ -142,6 +265,10 @@ function CollegeVoiceSearchContent() {
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
+    }
+    if (outboundTrackRef.current) {
+      outboundTrackRef.current.stop();
+      outboundTrackRef.current = null;
     }
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
@@ -158,18 +285,52 @@ function CollegeVoiceSearchContent() {
     );
   };
 
+  // 1-Click Room Noise Auto-Calibrator (Measures room for 1.2s and sets cutoff safely above it)
+  const handleCalibrateRoom = () => {
+    if (!analyserRef.current || voiceState === 'disconnected' || isCalibrating) return;
+
+    setIsCalibrating(true);
+    setStatusDetail(
+      language === 'hi'
+        ? '🎯 कमरे के शोर को मापा जा रहा है... 1 सेकंड शांत रहें'
+        : '🎯 Measuring room ambient noise... Please stay quiet for 1s'
+    );
+    const samples: number[] = [];
+    const interval = setInterval(() => {
+      samples.push(audioLevel);
+    }, 40);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      setIsCalibrating(false);
+      if (samples.length > 0) {
+        samples.sort((a, b) => a - b);
+        const p85Index = Math.floor(samples.length * 0.85);
+        const ambientLevel = samples[p85Index] || samples[samples.length - 1];
+        // Set cutoff right above room noise
+        const newCutoff = Math.min(25, Math.max(4, ambientLevel + 3));
+        setGateThresholdPct(newCutoff);
+        setStatusDetail(
+          language === 'hi'
+            ? `✅ रूम कैलिब्रेट हुआ (शोर: ${ambientLevel}%)! कटऑफ सेट: ${newCutoff}%. अब सवाल बोलें...`
+            : `✅ Calibrated! Ambient noise: ${ambientLevel}%, Cutoff set to ${newCutoff}%. Speak your query...`
+        );
+      }
+    }, 1200);
+  };
+
   const handlePushTalkStart = (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
+    if (isBotRespondingRef.current) return;
     if (voiceMode !== 'push_to_talk' || voiceState === 'disconnected' || voiceState === 'connecting' || voiceState === 'error') return;
     if (isPushTalkingRef.current) return;
 
     isPushTalkingRef.current = true;
     setIsPushTalking(true);
+    setIsGateOpen(true);
 
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach(track => {
-        track.enabled = true;
-      });
+    if (outboundTrackRef.current) {
+      outboundTrackRef.current.enabled = true;
     }
     setVoiceState('listening');
     setStatusDetail(
@@ -184,16 +345,17 @@ function CollegeVoiceSearchContent() {
 
     isPushTalkingRef.current = false;
     setIsPushTalking(false);
+    setIsGateOpen(false);
 
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach(track => {
-        track.enabled = false;
-      });
+    if (outboundTrackRef.current) {
+      outboundTrackRef.current.enabled = false;
     }
 
+    isBotRespondingRef.current = true;
+    setIsBotResponding(true);
     setVoiceState('searching');
     setStatusDetail(
-      language === 'hi' ? '⏳ आवाज़ प्रोसेस की जा रही है...' : '⏳ Processing speech & searching...'
+      language === 'hi' ? '⏳ सवाल प्रोसेस किया जा रहा है... (माइक बंद है)' : '⏳ Processing speech & searching... (Mic locked)'
     );
 
     // Commit buffer and request model response
@@ -223,7 +385,7 @@ function CollegeVoiceSearchContent() {
     );
 
     try {
-      // 1. Get user media (microphone access) with clean audio processing
+      // 1. Get raw microphone stream (Keep localStreamRef unmuted so analyser always receives live audio!)
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
@@ -235,12 +397,14 @@ function CollegeVoiceSearchContent() {
         });
         localStreamRef.current = stream;
 
-        // In Push-to-Talk mode, mute mic track immediately until user holds button
-        if (voiceMode === 'push_to_talk') {
-          stream.getAudioTracks().forEach(track => {
-            track.enabled = false;
-          });
-        }
+        // Clone mic track for WebRTC outbound transmission:
+        // Cloned track has completely independent enabled state. Changing outboundTrack.enabled does NOT mute stream!
+        const micTrack = stream.getAudioTracks()[0];
+        const outboundTrack = micTrack.clone();
+        outboundTrackRef.current = outboundTrack;
+
+        // In Push-to-Talk or Crowd Filter, outbound WebRTC track starts muted until speech/button detected
+        outboundTrack.enabled = voiceMode === 'hands_free';
       } catch (micErr: any) {
         setVoiceState('error');
         setErrorMessage(
@@ -252,14 +416,51 @@ function CollegeVoiceSearchContent() {
         return;
       }
 
-      // 2. Obtain short-lived ephemeral session token from backend with calibrated VAD / Mode params
+      // 2. Setup Web Audio Proximity Analyser (Using the always-live local stream)
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioCtx();
+      audioContextRef.current = audioCtx;
+
+      // CRITICAL FIX: Explicitly resume AudioContext so Chrome/Edge doesn't keep it suspended
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
+
+      const sourceNode = audioCtx.createMediaStreamSource(stream);
+
+      // Voice-Band Filtering: Human vocal range is 200 Hz - 3400 Hz.
+      // Highpass at 200 Hz eliminates laptop fan hum, AC rumble, and table thuds (<200 Hz)
+      const highpass = audioCtx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 200;
+
+      // Lowpass at 3400 Hz eliminates high frequency hiss and room clatter
+      const lowpass = audioCtx.createBiquadFilter();
+      lowpass.type = 'lowpass';
+      lowpass.frequency.value = 3400;
+
+      const analyserNode = audioCtx.createAnalyser();
+      analyserNode.fftSize = 512;
+      analyserNode.smoothingTimeConstant = 0.25;
+      analyserRef.current = analyserNode;
+
+      sourceNode.connect(highpass);
+      highpass.connect(lowpass);
+      lowpass.connect(analyserNode);
+
+      // Start the monitoring & noise gate loop
+      startNoiseGate(audioCtx, analyserNode, voiceMode);
+
+      // 3. Obtain short-lived ephemeral session token from backend with calibrated VAD / Mode params
+      const targetVadThreshold = voiceMode === 'crowd_filter' ? 0.68 : (voiceMode === 'push_to_talk' ? 0.5 : 0.55);
+      const targetSilenceMs = 650;
       const sessionData = await api.createVoiceSession(
         activeProjectId,
         selectedVoice,
         language,
-        voiceMode,
-        0.5,
-        650
+        voiceMode === 'push_to_talk' ? 'push_to_talk' : 'hands_free',
+        targetVadThreshold,
+        targetSilenceMs
       );
       const ephemeralKey = sessionData.client_secret?.value;
 
@@ -267,7 +468,7 @@ function CollegeVoiceSearchContent() {
         throw new Error('Backend did not return ephemeral client secret for OpenAI Realtime.');
       }
 
-      // 3. Initialize WebRTC Peer Connection
+      // 4. Initialize WebRTC Peer Connection
       const pc = new RTCPeerConnection();
       peerConnectionRef.current = pc;
 
@@ -282,10 +483,12 @@ function CollegeVoiceSearchContent() {
         }
       };
 
-      // Add local microphone audio track to WebRTC
-      stream.getAudioTracks().forEach(track => pc.addTrack(track, stream));
+      // Add the CLONED outbound audio track to WebRTC!
+      if (outboundTrackRef.current) {
+        pc.addTrack(outboundTrackRef.current, new MediaStream([outboundTrackRef.current]));
+      }
 
-      // 4. Set up Realtime Data Channel for event handling
+      // 5. Set up Realtime Data Channel for event handling
       const dc = pc.createDataChannel('oai-events');
       dataChannelRef.current = dc;
 
@@ -296,6 +499,12 @@ function CollegeVoiceSearchContent() {
             language === 'hi'
               ? `पुश-टू-टॉक सक्रिय! ${activeProject?.college_name || 'कॉलेज'} से बात करने के लिए नीचे बटन दबाकर रखें (या Space दबाएं)।`
               : `Push-to-Talk active! Hold the button below (or Spacebar) to speak to ${activeProject?.college_name || 'the college'}.`
+          );
+        } else if (voiceMode === 'crowd_filter') {
+          setStatusDetail(
+            language === 'hi'
+              ? `🛡️ क्राउड शील्ड सक्रिय! ${activeProject?.college_name || 'कॉलेज'} के बारे में अपना सवाल माइक के पास बोलें...`
+              : `🛡️ Crowd Shield active! Speak your question close to microphone in Indian English or Hindi...`
           );
         } else {
           setStatusDetail(
@@ -377,10 +586,8 @@ function CollegeVoiceSearchContent() {
   };
 
   const setMicrophoneMuted = (muted: boolean) => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach(track => {
-        track.enabled = !muted;
-      });
+    if (outboundTrackRef.current) {
+      outboundTrackRef.current.enabled = !muted;
     }
   };
 
@@ -389,19 +596,37 @@ function CollegeVoiceSearchContent() {
     console.log('[Realtime Event]', event.type, event);
 
     switch (event.type) {
-      // User speech detected by Server VAD
+      // User speech started
       case 'input_audio_buffer.speech_started':
-        setVoiceState('listening');
+        if (!isBotRespondingRef.current) {
+          setVoiceState('listening');
+          setStatusDetail(
+            language === 'hi' ? '🎙 आपकी आवाज़ सुन रहे हैं...' : '🎙 Listening to your speech...'
+          );
+        }
+        break;
+
+      // Question speaking finished -> IMMEDIATELY LOCK MIC (MIC BAND)!
+      case 'input_audio_buffer.speech_stopped':
+        isBotRespondingRef.current = true;
+        setIsBotResponding(true);
+        if (outboundTrackRef.current) {
+          outboundTrackRef.current.enabled = false;
+        }
+        setIsGateOpen(false);
+        setVoiceState('searching');
         setStatusDetail(
-          language === 'hi' ? '🎙 आपकी आवाज़ सुन रहे हैं...' : '🎙 Listening to your speech...'
+          language === 'hi' ? '⏳ सवाल समझा जा रहा है... (माइक बंद है)' : '⏳ Processing speech... (Mic locked)'
         );
         break;
 
-      case 'input_audio_buffer.speech_stopped':
-        setVoiceState('searching');
-        setStatusDetail(
-          language === 'hi' ? '⏳ सवाल समझा जा रहा है...' : '⏳ Processing speech...'
-        );
+      case 'response.created':
+        isBotRespondingRef.current = true;
+        setIsBotResponding(true);
+        if (outboundTrackRef.current) {
+          outboundTrackRef.current.enabled = false;
+        }
+        setIsGateOpen(false);
         break;
 
       // User speech transcription completed
@@ -409,16 +634,34 @@ function CollegeVoiceSearchContent() {
         if (event.transcript && event.transcript.trim()) {
           const rawText = event.transcript.trim();
           const userText = rawText.replace(/[\uFFFD\u0000-\u001F]/g, '').trim();
+          const itemId = event.item_id || event.item?.id || `user_${Date.now()}`;
+          const messageId = itemId.startsWith('user_') ? itemId : `user_${itemId}`;
+
+          if (process.env.NODE_ENV !== 'production' || (typeof window !== 'undefined' && (window as any).__DEBUG_VOICE__)) {
+            console.log('[ASR Transcription Completed]', {
+              item_id: event.item_id,
+              message_id: messageId,
+              transcript: userText,
+              type: event.type
+            });
+          }
+
           if (userText) {
             setMessages(prev => {
-              // Avoid duplicate user message if already added
+              // 1. Check if a message with this exact item_id already exists (update in place)
+              const existingIdx = prev.findIndex(m => m.id === messageId || m.id === itemId);
+              if (existingIdx !== -1) {
+                return prev.map((m, idx) => idx === existingIdx ? { ...m, content: userText } : m);
+              }
+              // 2. Prevent duplicate user message if immediate last message is already user with identical content
               if (prev.length > 0 && prev[prev.length - 1].role === 'user' && prev[prev.length - 1].content === userText) {
                 return prev;
               }
+              // 3. Otherwise add new completed user message
               return [
                 ...prev,
                 {
-                  id: `user_${Date.now()}`,
+                  id: messageId,
                   role: 'user',
                   content: userText,
                   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -444,15 +687,22 @@ function CollegeVoiceSearchContent() {
           processedCallIdsRef.current.add(callId);
 
           try {
-            // Ensure mic stays locked
-            setMicrophoneMuted(true);
+            // Ensure mic is strictly locked while processing tool and searching
+            isBotRespondingRef.current = true;
+            isToolExecutingRef.current = true;
+            setIsBotResponding(true);
+            if (outboundTrackRef.current) {
+              outboundTrackRef.current.enabled = false;
+            }
+            setIsGateOpen(false);
+            setVoiceState('searching');
+
             const args = JSON.parse(funcArgs || '{}');
             const query = args.query || 'general college info';
-            setVoiceState('searching');
             setStatusDetail(
               language === 'hi'
-                ? `🔎 ${activeProject?.base_domain || 'कॉलेज वेबसाइट'} पर "${query}" खोजा जा रहा है...`
-                : `🔎 Searching ${activeProject?.base_domain || 'college website'} for "${query}"...`
+                ? `🔎 ${activeProject?.base_domain || 'कॉलेज वेबसाइट'} पर "${query}" खोजा जा रहा है... (माइक बंद है)`
+                : `🔎 Searching ${activeProject?.base_domain || 'college website'} for "${query}"... (Mic locked)`
             );
 
             // 1. EXECUTE EXISTING COLLEGE SEARCH BACKEND ENGINE + SYNTHESIZE DETAILED TEXT
@@ -465,7 +715,7 @@ function CollegeVoiceSearchContent() {
 
             setPendingToolResult(searchResult);
 
-            // 2. IMMEDIATELY RENDER DETAILED MARKDOWN & SOURCES CARD ON SCREEN
+            // 2. IMMEDIATELY RENDER DETAILED MARKDOWN & SOURCES CARD ON SCREEN (Chat Result Show)
             const assistantMsgId = `assistant_${Date.now()}`;
             setMessages(prev => [
               ...prev,
@@ -496,12 +746,15 @@ function CollegeVoiceSearchContent() {
               }
             };
 
+            isToolExecutingRef.current = false;
+
             if (dc.readyState === 'open') {
               dc.send(JSON.stringify(toolOutputEvent));
               dc.send(JSON.stringify({ type: 'response.create' }));
             }
           } catch (toolErr) {
             console.error('Failed to execute college web search tool:', toolErr);
+            isToolExecutingRef.current = false;
             if (dc.readyState === 'open' && callId) {
               dc.send(JSON.stringify({
                 type: 'conversation.item.create',
@@ -522,7 +775,6 @@ function CollegeVoiceSearchContent() {
           const textContent = event.item.content?.map((c: any) => c.transcript || c.text).filter(Boolean).join(' ') || '';
           if (textContent && textContent.trim()) {
             setMessages(prev => {
-              // If last message is already assistant with this text, ignore
               if (prev.length > 0 && prev[prev.length - 1].role === 'assistant') {
                 return prev.map((m, idx) => idx === prev.length - 1 ? { ...m, spokenText: textContent.trim() } : m);
               }
@@ -541,13 +793,19 @@ function CollegeVoiceSearchContent() {
         }
         break;
 
-      // Streaming Spoken Answer Text
+      // Streaming Spoken Answer Text (Voice Output)
       case 'response.audio_transcript.delta':
       case 'response.text.delta':
         const delta = event.delta || event.text || '';
+        isBotRespondingRef.current = true;
+        setIsBotResponding(true);
+        if (outboundTrackRef.current) {
+          outboundTrackRef.current.enabled = false;
+        }
+        setIsGateOpen(false);
         setVoiceState('speaking');
         setStatusDetail(
-          language === 'hi' ? '🔊 उत्तर दिया जा रहा है... (माइक रुका हुआ है)' : '🔊 Speaking answer... (Mic on hold)'
+          language === 'hi' ? '🔊 उत्तर दिया जा रहा है... (माइक बंद है)' : '🔊 Speaking answer... (Mic locked)'
         );
         setCurrentAssistantText(prev => prev + delta);
         break;
@@ -581,30 +839,21 @@ function CollegeVoiceSearchContent() {
         break;
 
       case 'response.audio.done':
+        // Audio stream payload has reached browser; now letting speaker finish
+        break;
+
+      // Response Completed: Check if it was intermediate tool-call or final spoken answer
       case 'response.done':
-        setVoiceState('listening');
-        if (voiceMode === 'push_to_talk') {
-          // Keep mic muted in push to talk until button is held
-          setMicrophoneMuted(true);
-          setIsPushTalking(false);
-          isPushTalkingRef.current = false;
-          setStatusDetail(
-            language === 'hi'
-              ? `🎙️ अगला सवाल पूछने के लिए बटन दबाकर रखें (या Space दबाएं)...`
-              : `🎙️ Hold button or press Space to ask your next question...`
-          );
-        } else {
-          // Re-enable microphone ONLY after full answer and audio are completely finished
-          if (!isMuted) {
-            setMicrophoneMuted(false);
-          }
-          setStatusDetail(
-            language === 'hi'
-              ? `🎙 सुन रहे हैं... ${activeProject?.college_name || 'कॉलेज'} के बारे में अगला सवाल पूछें।`
-              : `🎙 Listening... Ask your next question about ${activeProject?.college_name || 'the college'}.`
-          );
+        const outputItems = event.response?.output || [];
+        const hasFunctionCall = outputItems.some((item: any) => item.type === 'function_call');
+
+        if (hasFunctionCall || isToolExecutingRef.current) {
+          // Intermediate response that generated a function call.
+          // College search is underway; DO NOT UNLOCK MIC YET!
+          break;
         }
-        // If there is any leftover currentAssistantText that wasn't committed
+
+        // Commit any leftover currentAssistantText that wasn't committed
         if (currentAssistantText && currentAssistantText.trim()) {
           const txt = currentAssistantText.trim();
           setMessages(prev => {
@@ -626,11 +875,56 @@ function CollegeVoiceSearchContent() {
           });
           setCurrentAssistantText('');
         }
+
+        // Voice output complete: Wait 500ms grace period so audio playback buffer completely finishes from speakers
+        if (botFinishTimeoutRef.current) {
+          clearTimeout(botFinishTimeoutRef.current);
+        }
+        botFinishTimeoutRef.current = setTimeout(() => {
+          if (voiceStateRef.current === 'disconnected' || voiceStateRef.current === 'error') return;
+
+          // VOICE STOPPED -> NOW TURN MIC ON FOR SECOND QUESTION!
+          isBotRespondingRef.current = false;
+          setIsBotResponding(false);
+          setVoiceState('listening');
+
+          if (voiceMode === 'push_to_talk') {
+            if (outboundTrackRef.current) {
+              outboundTrackRef.current.enabled = false;
+            }
+            setIsPushTalking(false);
+            isPushTalkingRef.current = false;
+            setStatusDetail(
+              language === 'hi'
+                ? `🎙️ उत्तर पूरा हुआ! अगला सवाल पूछने के लिए बटन दबाएं (या Space दबाएं)...`
+                : `🎙️ Answer complete! Hold button or press Space to ask next question...`
+            );
+          } else {
+            if (voiceMode === 'hands_free') {
+              if (outboundTrackRef.current) {
+                outboundTrackRef.current.enabled = !isMuted;
+              }
+            }
+            // in crowd_filter mode, startNoiseGate loop now permits gate to open when user speaks
+            setStatusDetail(
+              language === 'hi'
+                ? `🎙️ उत्तर पूरा हुआ! ${activeProject?.college_name || 'कॉलेज'} के बारे में अगला सवाल पूछें (माइक ऑन है)।`
+                : `🎙️ Answer complete! Ask your next question about ${activeProject?.college_name || 'the college'} (Mic is active).`
+            );
+          }
+        }, 500);
         break;
 
       case 'error':
-        if (!isMuted) {
-          setMicrophoneMuted(false);
+        if (botFinishTimeoutRef.current) {
+          clearTimeout(botFinishTimeoutRef.current);
+          botFinishTimeoutRef.current = null;
+        }
+        isBotRespondingRef.current = false;
+        setIsBotResponding(false);
+        isToolExecutingRef.current = false;
+        if (outboundTrackRef.current && voiceMode === 'hands_free' && !isMuted) {
+          outboundTrackRef.current.enabled = true;
         }
         console.error('Realtime Server Error Event:', event);
         if (event.error?.message) {
@@ -658,11 +952,17 @@ function CollegeVoiceSearchContent() {
 
     // If active WebRTC data channel is open, send to OpenAI Realtime
     if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+      isBotRespondingRef.current = true;
+      setIsBotResponding(true);
+      if (outboundTrackRef.current) {
+        outboundTrackRef.current.enabled = false;
+      }
+      setIsGateOpen(false);
       setVoiceState('searching');
       setStatusDetail(
         language === 'hi'
-          ? `🔎 "${queryText}" खोजा जा रहा है...`
-          : `🔎 Searching for "${queryText}"...`
+          ? `🔎 "${queryText}" खोजा जा रहा है... (माइक बंद है)`
+          : `🔎 Searching for "${queryText}"... (Mic locked)`
       );
       const event = {
         type: 'conversation.item.create',
@@ -712,11 +1012,10 @@ function CollegeVoiceSearchContent() {
   };
 
   const toggleMute = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach(track => {
-        track.enabled = isMuted;
-      });
-      setIsMuted(!isMuted);
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    if (!isBotRespondingRef.current && outboundTrackRef.current) {
+      outboundTrackRef.current.enabled = !nextMuted;
     }
   };
 
@@ -859,28 +1158,31 @@ function CollegeVoiceSearchContent() {
           </div>
         </div>
 
-        {/* DUAL MODE SELECTOR BAR (Hands-Free vs Push-to-Talk) */}
-        <div className="bg-slate-900 px-4 py-2.5 sm:px-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-extrabold text-teal-300 uppercase tracking-wider flex items-center gap-1.5">
+        {/* 3-MODE VOICE SELECTOR BAR (Crowd Shield vs Push-to-Talk vs Quiet Room) */}
+        <div className="bg-slate-900 px-4 py-2.5 sm:px-6 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-extrabold text-teal-300 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
               <Zap className="w-3.5 h-3.5 text-amber-400" /> Voice Mode:
             </span>
-            <div className="inline-flex rounded-xl bg-slate-800/90 p-1 border border-teal-500/20 shadow-inner">
+            <div className="inline-flex flex-wrap rounded-xl bg-slate-800/90 p-1 border border-teal-500/20 shadow-inner gap-1">
+              {/* 1. Crowd Shield (Auto Gate) */}
               <button
                 type="button"
                 onClick={() => {
                   if (voiceState !== 'disconnected') handleEndSession();
-                  setVoiceMode('hands_free');
+                  setVoiceMode('crowd_filter');
                 }}
                 className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  voiceMode === 'hands_free'
-                    ? 'bg-teal-500 text-slate-950 shadow-md font-extrabold'
+                  voiceMode === 'crowd_filter'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md font-extrabold'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Radio className="w-3.5 h-3.5" />
-                <span>⚡ Hands-Free Auto</span>
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>🛡️ Crowd Shield (Auto)</span>
               </button>
+
+              {/* 2. Push-to-Talk (Hold) */}
               <button
                 type="button"
                 onClick={() => {
@@ -896,19 +1198,41 @@ function CollegeVoiceSearchContent() {
                 <Mic className="w-3.5 h-3.5" />
                 <span>🎙️ Push-to-Talk (Hold)</span>
               </button>
+
+              {/* 3. Quiet Room (Normal) */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (voiceState !== 'disconnected') handleEndSession();
+                  setVoiceMode('hands_free');
+                }}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  voiceMode === 'hands_free'
+                    ? 'bg-teal-500 text-slate-950 shadow-md font-extrabold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5" />
+                <span>⚡ Quiet Room</span>
+              </button>
             </div>
           </div>
 
-          <div className="text-[11px] text-slate-400 hidden sm:flex items-center gap-2">
-            {voiceMode === 'hands_free' ? (
-              <span className="flex items-center gap-1.5 text-teal-300">
+          <div className="text-[11px] text-slate-400 flex items-center gap-2">
+            {voiceMode === 'crowd_filter' ? (
+              <span className="flex items-center gap-1.5 text-emerald-300 font-medium">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                Calibrated VAD (0.85 Threshold &bull; 450ms Silence Gate)
+                Proximity Gate + Calibrated VAD (0.85): Background crowd murmurs are silenced.
               </span>
-            ) : (
+            ) : voiceMode === 'push_to_talk' ? (
               <span className="flex items-center gap-1.5 text-amber-300 font-medium">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                100% Zero Background Voice &bull; Hold button or [Spacebar] to speak
+                100% Zero Ambient Noise &bull; Hold button or [Spacebar] to speak
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-teal-300">
+                <Radio className="w-3.5 h-3.5 text-teal-400" />
+                Standard Continuous Voice &bull; Best for silent rooms &amp; offices
               </span>
             )}
           </div>
@@ -918,18 +1242,24 @@ function CollegeVoiceSearchContent() {
         <div className="p-4 sm:p-7 bg-gradient-to-b from-slate-50/80 to-white flex flex-col items-center text-center relative overflow-hidden space-y-4 sm:space-y-5">
           {/* Ambient Wave FX when active */}
           {(voiceState === 'listening' || voiceState === 'speaking' || isPushTalking) && (
-            <div className={`absolute inset-0 pointer-events-none animate-pulse ${isPushTalking ? 'bg-red-50/60' : 'bg-teal-50/50'}`} />
+            <div className={`absolute inset-0 pointer-events-none animate-pulse ${
+              isPushTalking ? 'bg-red-50/60' : isGateOpen ? 'bg-emerald-50/50' : 'bg-teal-50/40'
+            }`} />
           )}
 
-          {/* Status Badge */}
+          {/* Status Badge & Proximity Gate Indicator */}
           <div className="flex flex-wrap items-center justify-center gap-2 z-10">
             <span className={`px-4 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-2 shadow-sm transition-all ${
               isPushTalking
                 ? 'bg-red-100 text-red-800 border border-red-300 ring-4 ring-red-500/30 animate-pulse'
+                : isBotResponding
+                ? 'bg-amber-100 text-amber-900 border border-amber-300 ring-2 ring-amber-500/30 animate-pulse'
                 : voiceState === 'speaking'
                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 ring-2 ring-emerald-500/20 animate-pulse'
                 : voiceState === 'listening'
-                ? 'bg-teal-100 text-teal-800 border border-teal-300 ring-2 ring-teal-500/20'
+                ? isGateOpen
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 ring-2 ring-emerald-500/20 animate-pulse'
+                  : 'bg-teal-100 text-teal-800 border border-teal-300 ring-2 ring-teal-500/20'
                 : voiceState === 'searching'
                 ? 'bg-amber-100 text-amber-800 border border-amber-300 ring-2 ring-amber-500/20'
                 : voiceState === 'connecting'
@@ -939,22 +1269,34 @@ function CollegeVoiceSearchContent() {
                 : 'bg-slate-100 text-slate-700 border border-slate-300'
             }`}>
               {isPushTalking && <Mic className="w-4 h-4 animate-bounce text-red-600" />}
-              {!isPushTalking && voiceState === 'speaking' && <Volume2 className="w-4 h-4 animate-bounce text-emerald-600" />}
-              {!isPushTalking && voiceState === 'listening' && <Mic className="w-4 h-4 animate-pulse text-teal-600" />}
-              {!isPushTalking && voiceState === 'searching' && <RefreshCw className="w-4 h-4 animate-spin text-amber-600" />}
+              {!isPushTalking && isBotResponding && <Lock className="w-4 h-4 text-amber-700 animate-pulse" />}
+              {!isPushTalking && !isBotResponding && voiceState === 'speaking' && <Volume2 className="w-4 h-4 animate-bounce text-emerald-600" />}
+              {!isPushTalking && !isBotResponding && voiceState === 'listening' && (
+                isGateOpen ? <Mic className="w-4 h-4 text-emerald-600 animate-pulse" /> : <ShieldCheck className="w-4 h-4 text-teal-600" />
+              )}
+              {!isPushTalking && !isBotResponding && voiceState === 'searching' && <RefreshCw className="w-4 h-4 animate-spin text-amber-600" />}
               {!isPushTalking && voiceState === 'connecting' && <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />}
               {!isPushTalking && voiceState === 'error' && <AlertCircle className="w-4 h-4 text-red-600" />}
               {!isPushTalking && voiceState === 'disconnected' && <Radio className="w-4 h-4 text-slate-400" />}
               
               <span className="uppercase tracking-wider">
                 {isPushTalking && (language === 'hi' ? 'बोल रहे हैं... छोड़ते ही जवाब आएगा' : 'Recording Voice... Release to Send')}
-                {!isPushTalking && voiceState === 'speaking' && (language === 'hi' ? 'उत्तर दिया जा रहा है' : 'Speaking Spoken Answer')}
-                {!isPushTalking && voiceState === 'listening' && (
+                {!isPushTalking && isBotResponding && (
+                  voiceState === 'speaking'
+                    ? (language === 'hi' ? '🔒 उत्तर बोल रहे हैं (माइक बंद है)' : '🔒 Speaking Answer (Mic Muted)')
+                    : (language === 'hi' ? '🔒 सवाल प्रोसेस हो रहा है (माइक बंद है)' : '🔒 Processing Query (Mic Muted)')
+                )}
+                {!isPushTalking && !isBotResponding && voiceState === 'speaking' && (language === 'hi' ? 'उत्तर दिया जा रहा है' : 'Speaking Spoken Answer')}
+                {!isPushTalking && !isBotResponding && voiceState === 'listening' && (
                   voiceMode === 'push_to_talk'
                     ? (language === 'hi' ? 'पुश-टू-टॉक: बोलने के लिए होल्ड करें' : 'Push-to-Talk: Hold to Speak')
-                    : (language === 'hi' ? 'सुन रहे हैं... बोलिए' : 'Listening... Speak Now')
+                    : voiceMode === 'crowd_filter'
+                    ? (isGateOpen
+                        ? (language === 'hi' ? 'माइक खुला है: बोलिए...' : 'Voice Detected: Speak Now...')
+                        : (language === 'hi' ? 'माइक ऑन है: सवाल बोलें' : 'Mic Active: Speak Question'))
+                    : (language === 'hi' ? 'सुन रहे हैं... सवाल बोलें' : 'Listening... Speak Question')
                 )}
-                {!isPushTalking && voiceState === 'searching' && (language === 'hi' ? 'वेबसाइट पर खोज जारी है' : 'Searching College Website')}
+                {!isPushTalking && !isBotResponding && voiceState === 'searching' && (language === 'hi' ? 'वेबसाइट पर खोज जारी है' : 'Searching College Website')}
                 {!isPushTalking && voiceState === 'connecting' && (language === 'hi' ? 'रियलटाइम कनेक्ट हो रहा है...' : 'Connecting Realtime')}
                 {!isPushTalking && voiceState === 'error' && 'Session Error'}
                 {!isPushTalking && voiceState === 'disconnected' && (language === 'hi' ? 'तैयार / Idle' : 'Ready / Idle')}
@@ -966,15 +1308,179 @@ function CollegeVoiceSearchContent() {
                 <span>Hold to speak &bull; [SPACE]</span>
               </span>
             )}
+
+            {voiceMode === 'crowd_filter' && voiceState !== 'disconnected' && voiceState !== 'error' && (
+              <span className={`px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-all ${
+                isBotResponding
+                  ? 'bg-amber-50 text-amber-900 border-amber-300 ring-2 ring-amber-400/20'
+                  : isGateOpen
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 ring-2 ring-emerald-400/20'
+                  : 'bg-slate-100 text-slate-600 border-slate-300'
+              }`}>
+                {isBotResponding ? (
+                  <>
+                    <Lock className="w-2.5 h-2.5 text-amber-600" />
+                    <span>Mic Locked</span>
+                  </>
+                ) : isGateOpen ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span>Transmitting</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <span>Crowd Muted</span>
+                  </>
+                )}
+              </span>
+            )}
           </div>
 
-          {/* Central Interactive Mic / Push-to-Talk Button */}
+          {/* REALTIME CROWD SHIELD PROXIMITY METER (Visible when connected in crowd_filter mode) */}
+          {voiceMode === 'crowd_filter' && (voiceState === 'listening' || voiceState === 'speaking' || voiceState === 'searching') && (
+            <div className="w-full max-w-sm bg-slate-900/90 text-white rounded-2xl p-2.5 sm:p-3 border border-teal-500/30 shadow-lg flex flex-col gap-2 z-10">
+              <div className="flex items-center justify-between text-[11px] font-bold">
+                <span className="flex items-center gap-1.5 text-teal-300">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Mic Proximity: <strong className="text-white text-xs">{audioLevel}%</strong></span>
+                </span>
+                <span className={isBotResponding ? 'text-amber-400 font-bold flex items-center gap-1' : isGateOpen ? 'text-emerald-400 font-black flex items-center gap-1' : 'text-slate-400 flex items-center gap-1'}>
+                  <span className={`w-2 h-2 rounded-full ${isBotResponding ? 'bg-amber-400' : isGateOpen ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
+                  {isBotResponding ? '🔒 Mic Locked' : isGateOpen ? '🟢 Voice Active' : '🛡️ Crowd Silenced'}
+                </span>
+              </div>
+
+              {/* Progress bar with gate threshold marker */}
+              <div className="relative w-full h-3.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700/80">
+                <div
+                  className={`h-full transition-all duration-75 rounded-full ${
+                    isGateOpen
+                      ? 'bg-gradient-to-r from-teal-400 to-emerald-400 shadow-sm shadow-emerald-400/50'
+                      : 'bg-slate-600'
+                  }`}
+                  style={{ width: `${Math.max(2, audioLevel)}%` }}
+                />
+                {/* Gate Threshold Marker placed exactly at gateThresholdPct */}
+                <div
+                  className="absolute top-0 bottom-0 w-1 bg-amber-400 shadow-md ring-1 ring-amber-300 transition-all duration-150"
+                  style={{ left: `${Math.min(95, Math.max(2, gateThresholdPct))}%` }}
+                  title={`Cutoff Threshold: ${gateThresholdPct}% (Sound below this is filtered out)`}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-[9px] text-slate-400 px-0.5">
+                <span>🔇 Room Murmur</span>
+                <span className="text-amber-400 font-bold bg-slate-800/80 px-1.5 py-0.5 rounded border border-amber-400/30">
+                  &larr; Cutoff: {gateThresholdPct}% &rarr;
+                </span>
+                <span className="text-emerald-300">🗣️ User Voice</span>
+              </div>
+
+              {/* Sensitivity Presets & Interactive Slider */}
+              <div className="flex flex-col gap-1.5 pt-1 border-t border-slate-800 text-[10px]">
+                <div className="flex items-center justify-between flex-wrap gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleCalibrateRoom}
+                      disabled={isCalibrating}
+                      className={`px-2 py-0.5 rounded text-[10px] font-extrabold transition-all flex items-center gap-1 border ${
+                        isCalibrating
+                          ? 'bg-amber-400 text-slate-950 border-amber-300 animate-pulse'
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400/50 shadow-sm'
+                      }`}
+                      title="1-Click: Measures your room noise for 1s and sets cutoff safely above it"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-300" />
+                      <span>{isCalibrating ? 'Measuring...' : 'Auto-Calibrate'}</span>
+                    </button>
+                  </div>
+
+                  <div className="inline-flex rounded-lg bg-slate-800 p-0.5 border border-slate-700 gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setGateThresholdPct(4)}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                        gateThresholdPct === 4
+                          ? 'bg-teal-500 text-slate-950 font-black shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="Quiet room (opens at 4%)"
+                    >
+                      Quiet (4%)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGateThresholdPct(7)}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                        gateThresholdPct === 7
+                          ? 'bg-teal-500 text-slate-950 font-black shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="Normal room with fan (opens at 7%)"
+                    >
+                      Normal (7%)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGateThresholdPct(12)}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                        gateThresholdPct === 12
+                          ? 'bg-amber-400 text-slate-950 font-black shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="Noisy room / background murmur (opens at 12%)"
+                    >
+                      Noisy (12%)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGateThresholdPct(18)}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                        gateThresholdPct === 18
+                          ? 'bg-red-500 text-white font-black shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="Loud crowd / canteen shield (opens at 18%)"
+                    >
+                      Crowd (18%)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Fine-tuning range slider */}
+                <div className="flex items-center gap-2 pt-0.5">
+                  <span className="text-[9px] text-slate-400 shrink-0">Fine Adjust:</span>
+                  <input
+                    type="range"
+                    min="2"
+                    max="25"
+                    step="1"
+                    value={gateThresholdPct}
+                    onChange={(e) => setGateThresholdPct(Number(e.target.value))}
+                    className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-400"
+                    title={`Drag to set threshold (${gateThresholdPct}%)`}
+                  />
+                  <span className="text-[10px] font-black text-amber-300 shrink-0 w-6 text-right">
+                    {gateThresholdPct}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Central Interactive Mic / Push-to-Talk / End Call Button */}
           <div className="relative z-10 py-1">
             {/* Ambient pulse rings */}
-            {(voiceState === 'listening' || voiceState === 'speaking' || isPushTalking) && (
+            {(voiceState === 'listening' || voiceState === 'speaking' || isPushTalking || isBotResponding) && (
               <>
-                <div className={`absolute inset-0 rounded-full animate-ping ${isPushTalking ? 'bg-red-400/30' : 'bg-teal-400/20'}`} />
-                <div className={`absolute -inset-3 rounded-full animate-pulse ${isPushTalking ? 'bg-red-500/20' : 'bg-teal-500/10'}`} />
+                <div className={`absolute inset-0 rounded-full animate-ping ${
+                  isPushTalking ? 'bg-red-400/30' : isBotResponding ? 'bg-amber-400/30' : isGateOpen ? 'bg-emerald-400/30' : 'bg-teal-400/20'
+                }`} />
+                <div className={`absolute -inset-3 rounded-full animate-pulse ${
+                  isPushTalking ? 'bg-red-500/20' : isBotResponding ? 'bg-amber-500/20' : isGateOpen ? 'bg-emerald-500/20' : 'bg-teal-500/10'
+                }`} />
               </>
             )}
 
@@ -987,7 +1493,7 @@ function CollegeVoiceSearchContent() {
               >
                 <Mic className="w-9 h-9 group-hover:scale-110 transition-transform" />
                 <span className="text-[10px] font-extrabold mt-1 uppercase tracking-wider">
-                  {voiceMode === 'push_to_talk' ? 'Start PTT' : 'Start Voice'}
+                  {voiceMode === 'push_to_talk' ? 'Start PTT' : voiceMode === 'crowd_filter' ? 'Start Shield' : 'Start Voice'}
                 </span>
               </button>
             )}
@@ -1004,19 +1510,30 @@ function CollegeVoiceSearchContent() {
             {voiceMode === 'push_to_talk' && (voiceState === 'listening' || voiceState === 'speaking' || voiceState === 'searching') && (
               <button
                 type="button"
+                disabled={isBotResponding}
                 onMouseDown={handlePushTalkStart}
                 onMouseUp={handlePushTalkEnd}
                 onMouseLeave={handlePushTalkEnd}
                 onTouchStart={handlePushTalkStart}
                 onTouchEnd={handlePushTalkEnd}
                 onTouchCancel={handlePushTalkEnd}
-                className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full flex flex-col items-center justify-center transition-all shadow-2xl select-none cursor-pointer group ${
-                  isPushTalking
-                    ? 'bg-gradient-to-tr from-red-600 to-rose-600 text-white ring-8 ring-red-400/50 scale-105 shadow-red-600/40'
-                    : 'bg-gradient-to-tr from-amber-500 via-amber-400 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 ring-4 ring-amber-300 shadow-amber-500/30 hover:scale-105 active:scale-95'
+                className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full flex flex-col items-center justify-center transition-all shadow-2xl select-none group ${
+                  isBotResponding
+                    ? 'bg-slate-800 text-slate-300 ring-4 ring-amber-400/40 opacity-90 cursor-not-allowed'
+                    : isPushTalking
+                    ? 'bg-gradient-to-tr from-red-600 to-rose-600 text-white ring-8 ring-red-400/50 scale-105 shadow-red-600/40 cursor-pointer'
+                    : 'bg-gradient-to-tr from-amber-500 via-amber-400 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 ring-4 ring-amber-300 shadow-amber-500/30 hover:scale-105 active:scale-95 cursor-pointer'
                 }`}
               >
-                {isPushTalking ? (
+                {isBotResponding ? (
+                  <>
+                    <Lock className="w-9 h-9 text-amber-400 animate-pulse" />
+                    <span className="text-[10px] font-black mt-1 uppercase tracking-wider text-amber-300">
+                      {voiceState === 'speaking' ? 'Speaking...' : 'Searching...'}
+                    </span>
+                    <span className="text-[8px] font-bold text-slate-400 -mt-0.5">Mic Locked</span>
+                  </>
+                ) : isPushTalking ? (
                   <>
                     <Volume2 className="w-10 h-10 animate-pulse text-white" />
                     <span className="text-[10px] font-black mt-1 uppercase tracking-wider text-white">Release to Send</span>
@@ -1031,8 +1548,8 @@ function CollegeVoiceSearchContent() {
               </button>
             )}
 
-            {/* If CONNECTED in HANDS-FREE MODE: Click to End Call */}
-            {voiceMode === 'hands_free' && (voiceState === 'listening' || voiceState === 'speaking' || voiceState === 'searching') && (
+            {/* If CONNECTED in CROWD SHIELD or HANDS-FREE MODE: Click to End Call */}
+            {voiceMode !== 'push_to_talk' && (voiceState === 'listening' || voiceState === 'speaking' || voiceState === 'searching') && (
               <button
                 type="button"
                 onClick={handleEndSession}
@@ -1053,7 +1570,9 @@ function CollegeVoiceSearchContent() {
               {voiceState === 'disconnected'
                 ? (voiceMode === 'push_to_talk'
                     ? (language === 'hi' ? 'पुश-टू-टॉक शुरू करें। बातचीत के दौरान बटन दबाकर रखेंगे तभी आपकी आवाज़ जाएगी।' : 'Start Push-to-Talk. Microphone only transmits while you hold the button or spacebar.')
-                    : (language === 'hi' ? 'हैंड्स-फ्री वॉयस शुरू करें। बेहतर बैकग्राउंड नॉइज़ फिल्टर एक्टिव है।' : 'Start Hands-Free Voice. Realtime calibrated background noise filter active.'))
+                    : voiceMode === 'crowd_filter'
+                    ? (language === 'hi' ? '🛡️ क्राउड शील्ड एक्टिव है। आसपास के लोगों और शोर की आवाज़ अपने आप म्यूट हो जाएगी।' : '🛡️ Crowd Noise Shield active. Ambient room chatter and distant crowd voices are automatically silenced.')
+                    : (language === 'hi' ? 'हैंड्स-फ्री वॉयस शुरू करें। शांत कमरे के लिए उपयुक्त।' : 'Start Hands-Free Voice. Continuous auto-detection best for quiet rooms.'))
                 : `${activeProject?.college_name} (${activeProject?.base_domain}) &bull; Indian Tone`}
             </p>
           </div>
@@ -1061,7 +1580,7 @@ function CollegeVoiceSearchContent() {
           {/* Mute & Disconnect controls when active */}
           {(voiceState === 'listening' || voiceState === 'speaking' || voiceState === 'searching') && (
             <div className="flex flex-wrap items-center justify-center gap-3 pt-1 z-10">
-              {voiceMode === 'hands_free' && (
+              {voiceMode !== 'push_to_talk' && (
                 <button
                   type="button"
                   onClick={toggleMute}
