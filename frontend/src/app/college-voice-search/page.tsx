@@ -266,12 +266,19 @@ function CollegeVoiceSearchContent() {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
     }
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.pause();
+      remoteAudioRef.current.srcObject = null;
+    }
     if (outboundTrackRef.current) {
       outboundTrackRef.current.stop();
       outboundTrackRef.current = null;
     }
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+      });
       localStreamRef.current = null;
     }
     processedCallIdsRef.current.clear();
@@ -284,6 +291,27 @@ function CollegeVoiceSearchContent() {
         : 'Voice session ended. Click Start Voice Search to speak again.'
     );
   };
+
+  const handleEndSessionRef = useRef(handleEndSession);
+  handleEndSessionRef.current = handleEndSession;
+
+  // CRITICAL FIX: Stop voice session and mic completely when user navigates away to another page/feature
+  useEffect(() => {
+    return () => {
+      handleEndSessionRef.current();
+    };
+  }, []);
+
+  // Stop session on tab close or browser navigation
+  useEffect(() => {
+    const handleUnload = () => {
+      handleEndSessionRef.current();
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+    };
+  }, []);
 
   // 1-Click Room Noise Auto-Calibrator (Measures room for 1.2s and sets cutoff safely above it)
   const handleCalibrateRoom = () => {
@@ -1035,7 +1063,7 @@ function CollegeVoiceSearchContent() {
 
   if (projectsLoading) {
     return (
-      <div className="max-w-5xl mx-auto py-20 flex flex-col items-center justify-center space-y-4">
+      <div className="max-w-[1550px] w-full mx-auto py-20 flex flex-col items-center justify-center space-y-4">
         <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 shadow-sm">
           <RefreshCw className="w-6 h-6 animate-spin text-teal-600" />
         </div>
@@ -1046,7 +1074,7 @@ function CollegeVoiceSearchContent() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-3 sm:py-5 px-2 sm:px-4 space-y-4 sm:space-y-5">
+    <div className="max-w-[1550px] w-full mx-auto py-3 sm:py-5 px-2 sm:px-4 lg:px-6 space-y-4 sm:space-y-5">
       {/* SINGLE UNIFIED WINDOW CONTAINER */}
       <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden flex flex-col divide-y divide-slate-100">
         
@@ -1238,8 +1266,10 @@ function CollegeVoiceSearchContent() {
           </div>
         </div>
 
-        {/* VOICE CONTROL ISLAND (Single Unified Window Top Section) */}
-        <div className="p-4 sm:p-7 bg-gradient-to-b from-slate-50/80 to-white flex flex-col items-center text-center relative overflow-hidden space-y-4 sm:space-y-5">
+        {/* 2-COLUMN SPLIT GRID ON DESKTOP: LEFT VOICE CONTROLS (5 cols), RIGHT LIVE FEED (7 cols) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-100 flex-1">
+          {/* LEFT COLUMN: Voice Control Console */}
+          <div className="lg:col-span-5 p-4 sm:p-6 lg:p-7 bg-gradient-to-b from-slate-50/80 to-white flex flex-col justify-between items-center text-center relative overflow-hidden space-y-4 sm:space-y-5">
           {/* Ambient Wave FX when active */}
           {(voiceState === 'listening' || voiceState === 'speaking' || isPushTalking) && (
             <div className={`absolute inset-0 pointer-events-none animate-pulse ${
@@ -1636,9 +1666,9 @@ function CollegeVoiceSearchContent() {
           </div>
         </div>
 
-        {/* INTEGRATED LIVE RESPONSE & CONVERSATION FEED */}
-        <div className="p-3.5 sm:p-6 bg-slate-50/50 flex flex-col space-y-4 sm:space-y-5 min-h-[350px] sm:min-h-[420px]">
-          <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+        {/* RIGHT COLUMN: INTEGRATED LIVE RESPONSE & CONVERSATION FEED */}
+        <div className="lg:col-span-7 p-3.5 sm:p-6 bg-slate-50/50 flex flex-col space-y-4 sm:space-y-5 min-h-[500px] lg:h-[720px]">
+          <div className="flex items-center justify-between border-b border-slate-200/80 pb-3 shrink-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <MessageSquare className="w-4 h-4 text-teal-700 shrink-0" />
               <h3 className="font-extrabold text-xs sm:text-sm text-slate-900">
@@ -1659,7 +1689,7 @@ function CollegeVoiceSearchContent() {
           </div>
 
           {/* Messages Area */}
-          <div className="space-y-4 sm:space-y-5 overflow-y-auto max-h-[550px] pr-0.5 sm:pr-1">
+          <div className="space-y-4 sm:space-y-5 flex-1 overflow-y-auto pr-0.5 sm:pr-1 min-h-0">
             {messages.length === 0 && !currentAssistantText && (
               <div className="text-center py-8 sm:py-12 text-slate-400 text-xs space-y-2 px-2">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center mx-auto text-teal-600 shadow-sm">
@@ -1774,6 +1804,7 @@ function CollegeVoiceSearchContent() {
             <div ref={messagesEndRef} />
           </div>
         </div>
+      </div>
 
         {/* BOTTOM HELPER BAR */}
         <div className="p-3 sm:p-4 bg-white flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3 text-[11px] sm:text-xs text-slate-500">
@@ -1801,7 +1832,7 @@ function CollegeVoiceSearchContent() {
 export default function CollegeVoiceSearchPage() {
   return (
     <Suspense fallback={
-      <div className="max-w-5xl mx-auto py-20 flex justify-center text-sm font-bold text-slate-600">
+      <div className="max-w-[1550px] w-full mx-auto py-20 flex justify-center text-sm font-bold text-slate-600">
         Loading College Voice Search...
       </div>
     }>
