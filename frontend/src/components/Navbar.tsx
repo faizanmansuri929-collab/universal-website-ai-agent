@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Bot, Sparkles, Globe, GraduationCap, ShoppingBag, Mic, Menu, X, Users } from 'lucide-react';
+import { Bot, Sparkles, Globe, GraduationCap, Mic, Menu, X, Users } from 'lucide-react';
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -55,14 +55,6 @@ export default function Navbar() {
             <span className="px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900 text-[10px] font-bold">BETA</span>
           </Link>
 
-          <Link
-            href="/scraper"
-            className="text-xs lg:text-sm font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl border border-indigo-200 flex items-center gap-1.5 transition-all shadow-xs"
-          >
-            <ShoppingBag className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Scraper</span>
-            <span className="px-1.5 py-0.2 rounded bg-indigo-200 text-indigo-900 text-[10px] font-bold">BETA</span>
-          </Link>
 
           <Link
             href="/xyz-college"
@@ -151,17 +143,6 @@ export default function Navbar() {
             <span className="px-1.5 py-0.5 rounded bg-blue-200 text-blue-900 text-[10px] font-bold">BETA</span>
           </Link>
 
-          <Link
-            href="/scraper"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="flex items-center justify-between p-2.5 rounded-xl bg-indigo-50 text-indigo-900 font-bold text-xs border border-indigo-200"
-          >
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4 text-indigo-600" />
-              <span>Product Scraper</span>
-            </div>
-            <span className="px-1.5 py-0.5 rounded bg-indigo-200 text-indigo-900 text-[10px] font-bold">BETA</span>
-          </Link>
 
           <Link
             href="/"

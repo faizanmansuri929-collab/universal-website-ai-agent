@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Globe, ArrowRight, Layers, ShieldCheck, Zap, Bot, RefreshCw,
   FileText, GraduationCap, Award, CheckCircle2, Sparkles, Server,
-  Database, Users, Clock, Flame, Building2, ShoppingBag, Mic, Radio
+  Database, Users, Clock, Flame, Building2, Mic, Radio
 } from 'lucide-react';
 
 import { api, Agent, HardcodedBot } from '@/lib/api';
