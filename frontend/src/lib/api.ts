@@ -627,6 +627,7 @@ export const api = {
     name: string;
     phone: string;
     course?: string;
+    branch?: string;
     email?: string;
     city?: string;
     state?: string;

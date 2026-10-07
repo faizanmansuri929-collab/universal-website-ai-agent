@@ -41,7 +41,9 @@ const W: Record<string, ScoringSignal> = {
 interface Counsellor {
   id: string;
   name: string;
+  branch: 'CSE' | 'Civil' | 'Electronic' | 'Mechanical' | 'Other';
   group: string;
+  specialization: string;
   phone: string;
   email: string;
   calendar: string;
@@ -50,27 +52,57 @@ interface Counsellor {
 }
 
 const COUNSELLORS: Counsellor[] = [
-  { id: 'C1', name: 'Neha Mathur', group: 'Engineering & Computing', phone: '+91 90010 20001', email: 'neha.mathur@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 40 },
-  { id: 'C2', name: 'Saurabh Gupta', group: 'Engineering & Computing', phone: '+91 90010 20002', email: 'saurabh.gupta@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 40 },
-  { id: 'C3', name: 'Amit Joshi', group: 'Management & Commerce', phone: '+91 90010 20003', email: 'amit.joshi@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 10:00–6:00', maxOpen: 35 },
-  { id: 'C4', name: 'Ritu Saxena', group: 'Design & Arts', phone: '+91 90010 20004', email: 'ritu.saxena@poornima.example', calendar: 'Outlook – connected', hours: 'Mon–Fri 9:30–5:30', maxOpen: 30 }
+  // --- 1. COMPUTER SCIENCE & ENGINEERING (CSE) - 5 DEMO COUNSELLORS ---
+  { id: 'C_CSE_1', name: 'Neha Mathur', branch: 'CSE', group: 'B.Tech Computer Science (CSE)', specialization: 'Core CSE & Cloud Admissions', phone: '+91 90010 20001', email: 'neha.mathur@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 40 },
+  { id: 'C_CSE_2', name: 'Saurabh Gupta', branch: 'CSE', group: 'B.Tech Computer Science (CSE)', specialization: 'AI, Data Science & ML Focus', phone: '+91 90010 20002', email: 'saurabh.gupta@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 40 },
+  { id: 'C_CSE_3', name: 'Priya Nair', branch: 'CSE', group: 'B.Tech Computer Science (CSE)', specialization: 'Cyber Security & Networks', phone: '+91 90010 20003', email: 'priya.nair@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 35 },
+  { id: 'C_CSE_4', name: 'Rohan Verma', branch: 'CSE', group: 'B.Tech Computer Science (CSE)', specialization: 'Data Analytics & Big Data', phone: '+91 90010 20004', email: 'rohan.verma@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 35 },
+  { id: 'C_CSE_5', name: 'Ananya Sen', branch: 'CSE', group: 'B.Tech Computer Science (CSE)', specialization: 'Full-Stack Software Systems', phone: '+91 90010 20005', email: 'ananya.sen@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 35 },
+
+  // --- 2. CIVIL ENGINEERING - 5 DEMO COUNSELLORS ---
+  { id: 'C_CIV_1', name: 'Rajesh Sharma', branch: 'Civil', group: 'B.Tech Civil Engineering', specialization: 'Structural & Concrete Technology', phone: '+91 90010 20011', email: 'rajesh.sharma@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 40 },
+  { id: 'C_CIV_2', name: 'Manoj Kumar', branch: 'Civil', group: 'B.Tech Civil Engineering', specialization: 'Highway & Transportation Systems', phone: '+91 90010 20012', email: 'manoj.kumar@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 35 },
+  { id: 'C_CIV_3', name: 'Deepak Meena', branch: 'Civil', group: 'B.Tech Civil Engineering', specialization: 'Geotechnical & Construction Site', phone: '+91 90010 20013', email: 'deepak.meena@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 35 },
+  { id: 'C_CIV_4', name: 'Sunita Kaswan', branch: 'Civil', group: 'B.Tech Civil Engineering', specialization: 'Urban Infrastructure & Smart City', phone: '+91 90010 20014', email: 'sunita.kaswan@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 30 },
+  { id: 'C_CIV_5', name: 'Pooja Choudhary', branch: 'Civil', group: 'B.Tech Civil Engineering', specialization: 'Environmental & Water Resources', phone: '+91 90010 20015', email: 'pooja.choudhary@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 30 },
+
+  // --- 3. ELECTRONICS ENGINEERING (ECE) - 5 DEMO COUNSELLORS ---
+  { id: 'C_ECE_1', name: 'Vikram Joshi', branch: 'Electronic', group: 'B.Tech Electronics (ECE)', specialization: 'VLSI Design & Microchips', phone: '+91 90010 20021', email: 'vikram.joshi@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 40 },
+  { id: 'C_ECE_2', name: 'Sunita Rao', branch: 'Electronic', group: 'B.Tech Electronics (ECE)', specialization: 'Embedded Systems & IoT Devices', phone: '+91 90010 20022', email: 'sunita.rao@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 40 },
+  { id: 'C_ECE_3', name: 'Abhishek Rathore', branch: 'Electronic', group: 'B.Tech Electronics (ECE)', specialization: '5G Telecom & Wireless Systems', phone: '+91 90010 20023', email: 'abhishek.rathore@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 35 },
+  { id: 'C_ECE_4', name: 'Meenakshi Sen', branch: 'Electronic', group: 'B.Tech Electronics (ECE)', specialization: 'Robotics & Signal Hardware', phone: '+91 90010 20024', email: 'meenakshi.sen@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 35 },
+  { id: 'C_ECE_5', name: 'Karan Singhania', branch: 'Electronic', group: 'B.Tech Electronics (ECE)', specialization: 'Circuit Design & Hardware Labs', phone: '+91 90010 20025', email: 'karan.singhania@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 30 },
+
+  // --- 4. MECHANICAL ENGINEERING - 5 DEMO COUNSELLORS ---
+  { id: 'C_MECH_1', name: 'Ajay Meena', branch: 'Mechanical', group: 'B.Tech Mechanical Engg', specialization: 'Automobile & Electric Vehicles (EV)', phone: '+91 90010 20031', email: 'ajay.meena@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 40 },
+  { id: 'C_MECH_2', name: 'Sandeep Verma', branch: 'Mechanical', group: 'B.Tech Mechanical Engg', specialization: 'Robotics & Automation Industry', phone: '+91 90010 20032', email: 'sandeep.verma@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 35 },
+  { id: 'C_MECH_3', name: 'Harish Pareek', branch: 'Mechanical', group: 'B.Tech Mechanical Engg', specialization: 'CAD / CAM & Product Prototyping', phone: '+91 90010 20033', email: 'harish.pareek@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 35 },
+  { id: 'C_MECH_4', name: 'Divya Rathore', branch: 'Mechanical', group: 'B.Tech Mechanical Engg', specialization: 'Thermal Power & Aerodynamics', phone: '+91 90010 20034', email: 'divya.rathore@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 30 },
+  { id: 'C_MECH_5', name: 'Naveen Choudhary', branch: 'Mechanical', group: 'B.Tech Mechanical Engg', specialization: 'Manufacturing & CNC Machine Labs', phone: '+91 90010 20035', email: 'naveen.choudhary@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 9:30–5:30', maxOpen: 30 },
+
+  // --- 5. MANAGEMENT & DESIGN ---
+  { id: 'C3', name: 'Amit Joshi', branch: 'Other', group: 'Management & Commerce', specialization: 'MBA & BBA Admissions', phone: '+91 90010 20003', email: 'amit.joshi@poornima.example', calendar: 'Google – connected', hours: 'Mon–Sat 10:00–6:00', maxOpen: 35 },
+  { id: 'C4', name: 'Ritu Saxena', branch: 'Other', group: 'Design & Arts', specialization: 'B.Des & Fashion Aptitude', phone: '+91 90010 20004', email: 'ritu.saxena@poornima.example', calendar: 'Outlook – connected', hours: 'Mon–Fri 9:30–5:30', maxOpen: 30 }
 ];
 
 interface Programme {
   id: string;
   name: string;
+  branch: string;
   aliases: string;
   group: string;
   elig: string;
 }
 
 const PROGRAMMES: Programme[] = [
-  { id: 'P01', name: 'B.Tech Computer Science', aliases: 'cse, computer science, btech cs', group: 'Engineering & Computing', elig: '10+2 PCM, min 60% in PCM' },
-  { id: 'P02', name: 'B.Tech AI & Data Science', aliases: 'ai ds, aids, artificial intelligence', group: 'Engineering & Computing', elig: '10+2 PCM, min 60% in PCM' },
-  { id: 'P03', name: 'BCA', aliases: 'bca, computer applications', group: 'Engineering & Computing', elig: '10+2 any stream with Maths, min 50%' },
-  { id: 'P04', name: 'BBA', aliases: 'bba, business administration', group: 'Management & Commerce', elig: '10+2 any stream, min 50%' },
-  { id: 'P05', name: 'MBA', aliases: 'mba, pgdm', group: 'Management & Commerce', elig: 'Graduation min 50%, CAT/MAT/CMAT or PU test' },
-  { id: 'P06', name: 'B.Des', aliases: 'design, bdes, fashion, interior', group: 'Design & Arts', elig: '10+2 any stream, min 50% + design aptitude test' }
+  { id: 'P01', name: 'B.Tech Computer Science (CSE)', branch: 'Computer Science (CSE)', aliases: 'cse, computer science, btech cs, ai, data science', group: 'Engineering - CSE', elig: '10+2 PCM, min 60% in PCM' },
+  { id: 'P02', name: 'B.Tech Civil Engineering', branch: 'Civil Engineering', aliases: 'civil, civil engineering, construction', group: 'Engineering - Civil', elig: '10+2 PCM, min 50% in PCM' },
+  { id: 'P03', name: 'B.Tech Electronics (ECE)', branch: 'Electronics Engineering (ECE)', aliases: 'electronic, electronics, ece, electrical', group: 'Engineering - Electronics', elig: '10+2 PCM, min 55% in PCM' },
+  { id: 'P04', name: 'B.Tech Mechanical Engineering', branch: 'Mechanical Engineering', aliases: 'mechanical, mech, automobile', group: 'Engineering - Mechanical', elig: '10+2 PCM, min 50% in PCM' },
+  { id: 'P05', name: 'BCA', branch: 'Computer Applications', aliases: 'bca, computer applications', group: 'Computing', elig: '10+2 any stream with Maths, min 50%' },
+  { id: 'P06', name: 'BBA', branch: 'Business Administration', aliases: 'bba, business administration', group: 'Management', elig: '10+2 any stream, min 50%' },
+  { id: 'P07', name: 'MBA', branch: 'Management', aliases: 'mba, pgdm', group: 'Management', elig: 'Graduation min 50%, CAT/MAT/CMAT or PU test' },
+  { id: 'P08', name: 'B.Des', branch: 'Design & Arts', aliases: 'design, bdes, fashion, interior', group: 'Design & Arts', elig: '10+2 any stream, min 50% + design aptitude test' }
 ];
 
 interface LeadItem {
@@ -81,6 +113,7 @@ interface LeadItem {
   persona: string;
   rel: string;
   prog: string | null;
+  branch?: string;
   city: string;
   state: string;
   channel: string;
@@ -105,39 +138,39 @@ interface LeadItem {
 
 const INITIAL_DEMO_LEADS: LeadItem[] = [
   {
-    id: 'L-1001', name: 'Priya Sharma', phone: '+91 98290 11001', email: 'priya.s@mail.example', persona: 'Student', rel: 'Self', prog: 'P01', city: 'Jaipur', state: 'Rajasthan', channel: 'Website', page: '/admissions/btech', utm: 'organic', academic: '12th PCM · RBSE · 82% · 2026',
-    sig: ['name', 'verified', 'programme', 'fees', 'marks', 'timeline', 'msgs6', 'booked', 'eligible', 'region'], adj: [], dq: null, status: 'BOOKED', c: 'C1', created: '2026-09-30T22:46', last: '2026-10-01T09:20', slaDue: null, contacted: false,
-    summary: 'Class 12 PCM student, 82%, wants B.Tech CSE for 2026 intake. Asked fee and scholarship. Booked campus visit for 3 Oct.'
+    id: 'L-1001', name: 'Priya Sharma', phone: '+91 98290 11001', email: 'priya.s@mail.example', persona: 'Student', rel: 'Self', prog: 'P01', branch: 'Computer Science (CSE)', city: 'Jaipur', state: 'Rajasthan', channel: 'Website', page: '/admissions/btech', utm: 'organic', academic: '12th PCM · RBSE · 82% · 2026',
+    sig: ['name', 'verified', 'programme', 'fees', 'marks', 'timeline', 'msgs6', 'booked', 'eligible', 'region'], adj: [], dq: null, status: 'BOOKED', c: 'C_CSE_1', created: '2026-09-30T22:46', last: '2026-10-01T09:20', slaDue: null, contacted: false,
+    summary: 'Class 12 PCM student, 82%, wants B.Tech CSE for 2026 intake. Asked fee and scholarship. Assigned to Neha Mathur.'
   },
   {
-    id: 'L-1002', name: 'Arjun Rathore', phone: '+91 94140 11002', email: '', persona: 'Student', rel: 'Self', prog: 'P02', city: 'Jodhpur', state: 'Rajasthan', channel: 'WhatsApp', page: '—', utm: 'whatsapp_click', academic: '12th PCM · CBSE · 76% · 2026',
-    sig: ['name', 'verified', 'programme', 'fees', 'process', 'marks', 'timeline', 'visit', 'msgs6', 'returning', 'eligible', 'region'], adj: [], dq: null, status: 'QUALIFIED', c: 'C1', created: '2026-10-01T10:52', last: '2026-10-01T10:58', slaDue: '2026-10-01T11:28', contacted: false,
-    summary: 'PCM 76%, second visit. Comparing B.Tech AI & DS hostel fees and placements, wants to apply this month. Asked for a callback.'
+    id: 'L-1002', name: 'Arjun Rathore', phone: '+91 94140 11002', email: '', persona: 'Student', rel: 'Self', prog: 'P01', branch: 'Computer Science (CSE)', city: 'Jodhpur', state: 'Rajasthan', channel: 'WhatsApp', page: '—', utm: 'whatsapp_click', academic: '12th PCM · CBSE · 76% · 2026',
+    sig: ['name', 'verified', 'programme', 'fees', 'process', 'marks', 'timeline', 'visit', 'msgs6', 'returning', 'eligible', 'region'], adj: [], dq: null, status: 'QUALIFIED', c: 'C_CSE_2', created: '2026-10-01T10:52', last: '2026-10-01T10:58', slaDue: '2026-10-01T11:28', contacted: false,
+    summary: 'PCM 76%, second visit. Comparing B.Tech AI & DS hostel fees and placements. Assigned to Saurabh Gupta.'
   },
   {
-    id: 'L-1003', name: 'Rakesh Meena', phone: '+91 97830 11003', email: '', persona: 'Parent', rel: 'Father of Kavya Meena', prog: 'P04', city: 'Kota', state: 'Rajasthan', channel: 'Voice call', page: '—', utm: '—', academic: 'Daughter: 12th Commerce · RBSE · 71%',
-    sig: ['name', 'verified', 'programme', 'fees', 'process', 'visit', 'eligible', 'region'], adj: [{ l: 'Counsellor: Connected – Interested', p: 10 }], dq: null, status: 'CONTACTED', c: 'C3', created: '2026-09-29T19:12', last: '2026-09-30T12:05', slaDue: null, contacted: true,
-    summary: 'Father calling for daughter (Commerce 71%) for BBA. Concerned about girls\' hostel safety and instalments. Counsellor spoke, family interested.'
+    id: 'L-1003', name: 'Suresh Verma', phone: '+91 94140 22001', email: 'suresh.v@mail.example', persona: 'Student', rel: 'Self', prog: 'P02', branch: 'Civil Engineering', city: 'Kota', state: 'Rajasthan', channel: 'Website', page: '/admissions/civil', utm: 'organic', academic: '12th PCM · RBSE · 74% · 2026',
+    sig: ['name', 'verified', 'programme', 'fees', 'marks', 'timeline', 'eligible', 'region'], adj: [], dq: null, status: 'QUALIFIED', c: 'C_CIV_1', created: '2026-09-30T14:15', last: '2026-09-30T15:20', slaDue: null, contacted: false,
+    summary: 'Class 12 PCM 74%, wants B.Tech Civil Engineering. Asked structural concrete labs & construction site visits. Assigned to Rajesh Sharma.'
   },
   {
-    id: 'L-1004', name: 'Sneha Agarwal', phone: '+91 98110 11004', email: 'sneha.ag@mail.example', persona: 'Student', rel: 'Self', prog: 'P05', city: 'New Delhi', state: 'Delhi', channel: 'Website', page: '/mba', utm: 'google_ads / mba_search', academic: 'B.Com · DU · 68% · CMAT 2026',
+    id: 'L-1004', name: 'Ankit Soni', phone: '+91 98280 33001', email: 'ankit.s@mail.example', persona: 'Student', rel: 'Self', prog: 'P03', branch: 'Electronics Engineering (ECE)', city: 'Alwar', state: 'Rajasthan', channel: 'Website', page: '/admissions/ece', utm: 'google_ads', academic: '12th PCM · CBSE · 80% · 2026',
+    sig: ['name', 'verified', 'programme', 'fees', 'marks', 'visit', 'eligible', 'region'], adj: [], dq: null, status: 'QUALIFIED', c: 'C_ECE_1', created: '2026-09-29T11:30', last: '2026-09-29T12:00', slaDue: null, contacted: false,
+    summary: 'Class 12 PCM 80%, exploring B.Tech Electronics (ECE). Enquired for VLSI labs and IoT placements. Assigned to Vikram Joshi.'
+  },
+  {
+    id: 'L-1005', name: 'Rahul Jangid', phone: '+91 97840 44001', email: 'rahul.j@mail.example', persona: 'Student', rel: 'Self', prog: 'P04', branch: 'Mechanical Engineering', city: 'Bikaner', state: 'Rajasthan', channel: 'Voice call', page: '—', utm: '—', academic: '12th PCM · RBSE · 78% · 2026',
+    sig: ['name', 'verified', 'programme', 'fees', 'marks', 'timeline', 'eligible', 'region'], adj: [], dq: null, status: 'CONTACTED', c: 'C_MECH_1', created: '2026-09-28T16:00', last: '2026-09-29T10:15', slaDue: null, contacted: true,
+    summary: 'PCM 78%, interested in B.Tech Mechanical (Automobile & EV). Counsellor Ajay Meena discussed workshop facilities and EV lab.'
+  },
+  {
+    id: 'L-1006', name: 'Sneha Agarwal', phone: '+91 98110 11004', email: 'sneha.ag@mail.example', persona: 'Student', rel: 'Self', prog: 'P07', branch: 'Management', city: 'New Delhi', state: 'Delhi', channel: 'Website', page: '/mba', utm: 'google_ads / mba_search', academic: 'B.Com · DU · 68% · CMAT 2026',
     sig: ['name', 'verified', 'programme', 'fees', 'process', 'timeline', 'msgs6', 'eligible'], adj: [], dq: null, status: 'QUALIFIED', c: 'C3', created: '2026-09-30T16:40', last: '2026-09-30T16:58', slaDue: null, contacted: false,
-    summary: 'B.Com graduate (68%) with CMAT score, wants MBA 2026 batch. Asked about specialisations, fee and last date.'
+    summary: 'B.Com graduate (68%) with CMAT score, wants MBA 2026 batch. Assigned to Amit Joshi.'
   },
   {
-    id: 'L-1005', name: 'Mohit Kumawat', phone: '+91 96600 11005', email: '', persona: 'Student', rel: 'Self', prog: 'P03', city: 'Ajmer', state: 'Rajasthan', channel: 'Website', page: '/bca', utm: 'organic', academic: 'Not shared',
-    sig: ['name', 'verified', 'programme', 'fees', 'region'], adj: [], dq: null, status: 'NEW', c: null, created: '2026-09-30T21:15', last: '2026-09-30T21:19', slaDue: null, contacted: false,
-    summary: 'Asked BCA fee only, short chat. No marks or timeline shared.'
-  },
-  {
-    id: 'L-1006', name: 'Ananya Choudhary', phone: '+91 99280 11006', email: 'ananya.c@mail.example', persona: 'Student', rel: 'Self', prog: 'P06', city: 'Udaipur', state: 'Rajasthan', channel: 'Website', page: '/design', utm: 'instagram / bdes_reel', academic: '12th Arts · RBSE · 79% · 2026',
+    id: 'L-1007', name: 'Ananya Choudhary', phone: '+91 99280 11006', email: 'ananya.c@mail.example', persona: 'Student', rel: 'Self', prog: 'P08', branch: 'Design & Arts', city: 'Udaipur', state: 'Rajasthan', channel: 'Website', page: '/design', utm: 'instagram / bdes_reel', academic: '12th Arts · RBSE · 79% · 2026',
     sig: ['name', 'verified', 'programme', 'process', 'marks', 'visit', 'msgs6', 'booked', 'replied', 'eligible', 'region'], adj: [], dq: null, status: 'COUNSELLED', c: 'C4', created: '2026-09-26T20:30', last: '2026-09-29T15:40', slaDue: null, contacted: true,
-    summary: 'Arts 79%, interested in B.Des Interior. Counselling done 29 Sep. Needs aptitude test date and portfolio guidance.'
-  },
-  {
-    id: 'L-1007', name: 'Vikram Singh Shekhawat', phone: '+91 94130 11007', email: 'vikram.ss@mail.example', persona: 'Student', rel: 'Self', prog: 'P01', city: 'Sikar', state: 'Rajasthan', channel: 'WhatsApp', page: '—', utm: 'whatsapp_click', academic: '12th PCM · CBSE · 88% · 2026',
-    sig: ['name', 'verified', 'programme', 'fees', 'marks', 'timeline', 'msgs6', 'booked', 'replied', 'eligible', 'region'], adj: [], dq: null, status: 'APPLIED', c: 'C1', created: '2026-09-24T18:05', last: '2026-09-28T13:10', slaDue: null, contacted: true,
-    summary: 'PCM 88%, B.Tech CSE. Counselled 27 Sep, applied 28 Sep with merit scholarship. Follow-ups stopped.'
+    summary: 'Arts 79%, interested in B.Des Interior. Counselling done 29 Sep with Ritu Saxena.'
   }
 ];
 
@@ -177,21 +210,25 @@ export default function LeadEnginePage() {
   });
 
   // Chat & Direct Lead Capture State (NO OTP)
-  // Dynamic In-Session Lead & Memory Tracking
+  // Dynamic In-Session Lead & Memory Tracking (Course, Branch, Marks, Mobile)
   const [sessionLead, setSessionLead] = useState<{
     marks?: string;
     course?: string;
+    branch?: string;
     name?: string;
     phone?: string;
     score?: number;
     tier?: string;
+    assignedCounsellor?: string;
   }>({});
+
+  const [counsellorBranchFilter, setCounsellorBranchFilter] = useState<'all' | 'CSE' | 'Civil' | 'Electronic' | 'Mechanical'>('all');
 
   const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string; sources?: any[]; leadInfo?: any }>>([
     {
       id: 'm-init',
       role: 'assistant',
-      text: "👋 **Hello! Welcome to Poornima University Admissions 2026-27.**\n\nWhich course or branch are you interested in (e.g., B.Tech CSE, MBA, BCA, B.Des)? Feel free to share your 12th percentage or mobile number so I can calculate your exact scholarship discount and send the official fee brochure directly to your WhatsApp!"
+      text: "👋 **Hello! Welcome to Poornima University Admissions 2026-27.**\n\nWhich engineering branch are you interested in — **Computer Science (CSE)**, **Civil**, **Electronic (ECE)**, or **Mechanical**? Feel free to share your 12th percentage or mobile number so I can calculate your exact scholarship discount and assign you directly to that branch's dedicated admission counsellor!"
     }
   ]);
   const [chatInput, setChatInput] = useState('');
@@ -200,7 +237,8 @@ export default function LeadEnginePage() {
   // Quick Direct Contact Form (NO OTP)
   const [directName, setDirectName] = useState('');
   const [directPhone, setDirectPhone] = useState('');
-  const [directCourse, setDirectCourse] = useState('B.Tech Computer Science');
+  const [directCourse, setDirectCourse] = useState('B.Tech');
+  const [directBranch, setDirectBranch] = useState('Computer Science (CSE)');
   const [directCity, setDirectCity] = useState('Jaipur');
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [captureSuccess, setCaptureSuccess] = useState<{ name: string; phone: string; score: number; tier: string; counsellor: string } | null>(null);
@@ -220,43 +258,55 @@ export default function LeadEnginePage() {
     try {
       const data = await api.getLeadEngineLeads('proj_poornima');
       if (data && data.leads && data.leads.length > 0) {
-        const realItems: LeadItem[] = data.leads.map((dl: any) => ({
-          id: dl.id,
-          name: dl.name,
-          phone: dl.phone,
-          email: dl.email || '',
-          persona: 'Student',
-          rel: 'Self',
-          prog: 'P01',
-          city: dl.city || 'Jaipur',
-          state: dl.state || 'Rajasthan',
-          channel: 'Live Web Chat',
-          page: '/lead-engine',
-          utm: 'live_admission_chat',
-          academic: '12th PCM · Direct Capture',
-          sig: ['name', 'verified', 'programme', 'fees', 'eligible', 'region'],
-          adj: [],
-          dq: null,
-          status: dl.status || 'QUALIFIED',
-          c: 'C1',
-          created: dl.created_at,
-          last: dl.created_at,
-          slaDue: null,
-          contacted: false,
-          summary: dl.summary || `Live web enquiry for ${dl.course}`,
-          score: dl.score || 75,
-          tier: dl.tier || 'Hot',
-          breakdown: [
-            { l: 'Name captured', g: 'Profile', p: 3 },
-            { l: 'Direct mobile number provided (No OTP)', g: 'Profile', p: 7 },
-            { l: 'Programme identified', g: 'Profile', p: 5 },
-            { l: 'Asked fees / scholarship', g: 'Intent', p: 8 },
-            { l: 'Requested counselor contact', g: 'Intent', p: 8 },
-            { l: 'Live Web Chat Lead Capture', g: 'Engagement', p: 15 },
-            { l: 'From target admission region', g: 'Fit', p: 20 }
-          ],
-          isReal: true
-        }));
+        const realItems: LeadItem[] = data.leads.map((dl: any) => {
+          let assignedCId = 'C_CSE_1';
+          let progId = 'P01';
+          const brLower = (dl.branch || dl.course || '').toLowerCase();
+          if (brLower.includes('civil')) { assignedCId = 'C_CIV_1'; progId = 'P02'; }
+          else if (brLower.includes('electronic') || brLower.includes('ece')) { assignedCId = 'C_ECE_1'; progId = 'P03'; }
+          else if (brLower.includes('mechanical')) { assignedCId = 'C_MECH_1'; progId = 'P04'; }
+          else if (brLower.includes('mba') || brLower.includes('bba')) { assignedCId = 'C3'; progId = 'P07'; }
+          else if (brLower.includes('design')) { assignedCId = 'C4'; progId = 'P08'; }
+
+          return {
+            id: dl.id,
+            name: dl.name,
+            phone: dl.phone,
+            email: dl.email || '',
+            persona: 'Student',
+            rel: 'Self',
+            prog: progId,
+            branch: dl.branch || (dl.course.includes('B.Tech') ? 'Computer Science (CSE)' : dl.course),
+            city: dl.city || 'Jaipur',
+            state: dl.state || 'Rajasthan',
+            channel: 'Live Web Chat',
+            page: '/lead-engine',
+            utm: 'live_admission_chat',
+            academic: '12th PCM · Direct Capture',
+            sig: ['name', 'verified', 'programme', 'fees', 'eligible', 'region'],
+            adj: [],
+            dq: null,
+            status: dl.status || 'QUALIFIED',
+            c: assignedCId,
+            created: dl.created_at,
+            last: dl.created_at,
+            slaDue: null,
+            contacted: false,
+            summary: dl.summary || `Live web enquiry for ${dl.course} (${dl.branch || 'Engineering'})`,
+            score: dl.score || 75,
+            tier: dl.tier || 'Hot',
+            breakdown: [
+              { l: 'Name captured', g: 'Profile', p: 3 },
+              { l: 'Direct mobile number provided (No OTP)', g: 'Profile', p: 7 },
+              { l: 'Programme & Branch identified', g: 'Profile', p: 5 },
+              { l: 'Asked fees / scholarship', g: 'Intent', p: 8 },
+              { l: 'Requested counselor contact', g: 'Intent', p: 8 },
+              { l: 'Live Web Chat Lead Capture', g: 'Engagement', p: 15 },
+              { l: 'From target admission region', g: 'Fit', p: 20 }
+            ],
+            isReal: true
+          };
+        });
 
         setLeadsList(prev => {
           const existingIds = new Set(prev.map(p => p.id));
@@ -311,36 +361,88 @@ export default function LeadEnginePage() {
     setChatMessages(newChatHistory);
     setChatLoading(true);
 
-    // 1. In-Chat Lead Extraction & Session Memory Tracking
+    // 1. In-Chat Lead Extraction & Session Memory Tracking (Course, Branch, Marks, Mobile)
     const rawClean = textToSend.replace(/\+91/g, '').replace(/[\s\-\(\)\.]/g, '');
     const phoneMatch = textToSend.match(/\b[6-9]\d{9}\b/) || rawClean.match(/[6-9]\d{9}/);
     const pctMatch = textToSend.match(/(\b\d{1,2}(?:\.\d+)?\s*%)/) || textToSend.match(/(\b\d{2}\s*(?:percent|percentage|marks|pcm|grade)\b)/i);
     
     const lowerText = textToSend.toLowerCase();
     let detectedCourse = sessionLead.course;
-    if (lowerText.includes('cse') || lowerText.includes('computer science') || lowerText.includes('btech cse')) detectedCourse = "B.Tech Computer Science & Engineering";
-    else if (lowerText.includes('ai') || lowerText.includes('data science')) detectedCourse = "B.Tech AI & Data Science";
-    else if (lowerText.includes('b.tech') || lowerText.includes('btech')) detectedCourse = "B.Tech";
-    else if (lowerText.includes('mba')) detectedCourse = "MBA";
-    else if (lowerText.includes('bca')) detectedCourse = "BCA";
-    else if (lowerText.includes('bba')) detectedCourse = "BBA";
-    else if (lowerText.includes('design') || lowerText.includes('b.des')) detectedCourse = "B.Des";
+    let detectedBranch = sessionLead.branch;
+
+    // Detect specific B.Tech Engineering Branches (CSE, Civil, Electronic, Mechanical)
+    if (lowerText.includes('mechanical') || lowerText.includes('mech') || lowerText.includes('automobile') || lowerText.includes('मैकेनिकल')) {
+      detectedCourse = "B.Tech";
+      detectedBranch = "Mechanical Engineering";
+    } else if (lowerText.includes('civil') || lowerText.includes('सिविल')) {
+      detectedCourse = "B.Tech";
+      detectedBranch = "Civil Engineering";
+    } else if (lowerText.includes('electronic') || lowerText.includes('electronics') || lowerText.includes('ece') || lowerText.includes('electrical') || lowerText.includes('इलेक्ट्रॉनिक')) {
+      detectedCourse = "B.Tech";
+      detectedBranch = "Electronics Engineering (ECE)";
+    } else if (lowerText.includes('cse') || lowerText.includes('computer science') || lowerText.includes('btech cse') || lowerText.includes('ai & ds') || lowerText.includes('data science') || lowerText.includes('कम्प्यूटर')) {
+      detectedCourse = "B.Tech";
+      detectedBranch = "Computer Science (CSE)";
+    } else if (lowerText.includes('b.tech') || lowerText.includes('btech') || lowerText.includes('engineering') || lowerText.includes('बी.टेक')) {
+      detectedCourse = "B.Tech";
+    } else if (lowerText.includes('mba')) {
+      detectedCourse = "MBA";
+      detectedBranch = "Management";
+    } else if (lowerText.includes('bca')) {
+      detectedCourse = "BCA";
+      detectedBranch = "Computer Applications";
+    } else if (lowerText.includes('bba')) {
+      detectedCourse = "BBA";
+      detectedBranch = "Business Administration";
+    } else if (lowerText.includes('design') || lowerText.includes('b.des')) {
+      detectedCourse = "B.Des";
+      detectedBranch = "Design & Arts";
+    }
 
     let detectedName = sessionLead.name;
     const nameMatch = textToSend.match(/\b(?:my name is|mera nam|mera name|naam|name is|i am)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)\b/i);
     if (nameMatch) {
       const candidate = nameMatch[1].trim();
-      if (!['interested', 'looking', 'asking', 'student', 'btech', 'mba', 'bca'].includes(candidate.toLowerCase())) {
+      if (!['interested', 'looking', 'asking', 'student', 'btech', 'mba', 'bca', 'civil', 'mechanical'].includes(candidate.toLowerCase())) {
         detectedName = candidate.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
       }
+    }
+
+    // Assign dedicated Counsellor according to branch (5 Demo Counsellors each)
+    let assignedCounsellorId = 'C_CSE_1';
+    let assignedCounsellorName = 'Neha Mathur (B.Tech CSE)';
+    let progId = 'P01';
+
+    if (detectedBranch === 'Civil Engineering') {
+      assignedCounsellorId = 'C_CIV_1';
+      assignedCounsellorName = 'Rajesh Sharma (B.Tech Civil)';
+      progId = 'P02';
+    } else if (detectedBranch === 'Electronics Engineering (ECE)') {
+      assignedCounsellorId = 'C_ECE_1';
+      assignedCounsellorName = 'Vikram Joshi (B.Tech Electronic)';
+      progId = 'P03';
+    } else if (detectedBranch === 'Mechanical Engineering') {
+      assignedCounsellorId = 'C_MECH_1';
+      assignedCounsellorName = 'Ajay Meena (B.Tech Mechanical)';
+      progId = 'P04';
+    } else if (detectedCourse === 'MBA' || detectedCourse === 'BBA') {
+      assignedCounsellorId = 'C3';
+      assignedCounsellorName = 'Amit Joshi (Management & Commerce)';
+      progId = 'P07';
+    } else if (detectedCourse === 'B.Des') {
+      assignedCounsellorId = 'C4';
+      assignedCounsellorName = 'Ritu Saxena (Design & Arts)';
+      progId = 'P08';
     }
 
     const updatedProfile = {
       ...sessionLead,
       marks: pctMatch ? pctMatch[0].trim() : sessionLead.marks,
       course: detectedCourse || sessionLead.course,
+      branch: detectedBranch || sessionLead.branch,
       name: detectedName || sessionLead.name,
-      phone: phoneMatch ? phoneMatch[0] : sessionLead.phone
+      phone: phoneMatch ? phoneMatch[0] : sessionLead.phone,
+      assignedCounsellor: assignedCounsellorName
     };
     setSessionLead(updatedProfile);
 
@@ -348,17 +450,19 @@ export default function LeadEnginePage() {
 
     if (phoneMatch) {
       const capturedPhone = phoneMatch[0];
-      const leadName = detectedName || "Prospective Student";
-      const leadCourse = detectedCourse || "B.Tech Computer Science";
+      const leadName = updatedProfile.name || detectedName || sessionLead.name || "Prospective Student";
+      const leadCourse = updatedProfile.course || detectedCourse || sessionLead.course || "B.Tech";
+      const leadBranch = updatedProfile.branch || detectedBranch || sessionLead.branch || "Mechanical Engineering";
 
       try {
         const captureRes = await api.captureLead({
           name: leadName,
           phone: capturedPhone,
           course: leadCourse,
+          branch: leadBranch,
           academic: updatedProfile.marks ? `12th ${updatedProfile.marks}` : '12th PCM',
           city: "Jaipur",
-          chat_summary: `Direct In-Chat Lead: ${leadName} (${capturedPhone}) enquired for ${leadCourse}. Marks: ${updatedProfile.marks || 'Not shared'}.`,
+          chat_summary: `Direct In-Chat Lead: ${leadName} (${capturedPhone}) enquired for ${leadCourse} - ${leadBranch}. Marks: ${updatedProfile.marks || 'Not shared'}. Assigned to ${assignedCounsellorName}.`,
           project_id: 'proj_poornima'
         });
 
@@ -372,7 +476,8 @@ export default function LeadEnginePage() {
           email: captureRes.email || '',
           persona: 'Student',
           rel: 'Self',
-          prog: 'P01',
+          prog: progId,
+          branch: leadBranch,
           city: captureRes.city,
           state: captureRes.state,
           channel: 'Live Web Chat',
@@ -383,7 +488,7 @@ export default function LeadEnginePage() {
           adj: [],
           dq: null,
           status: 'QUALIFIED',
-          c: 'C1',
+          c: assignedCounsellorId,
           created: captureRes.created_at,
           last: captureRes.created_at,
           slaDue: null,
@@ -394,7 +499,7 @@ export default function LeadEnginePage() {
           breakdown: [
             { l: 'Name captured in chat', g: 'Profile', p: 3 },
             { l: 'Direct mobile number provided (No OTP)', g: 'Profile', p: 7 },
-            { l: 'Programme identified', g: 'Profile', p: 5 },
+            { l: 'Branch & Programme identified', g: 'Profile', p: 5 },
             { l: '12th Marks / Percentage Shared', g: 'Intent', p: 8 },
             { l: 'Live Web Chat Lead Capture', g: 'Engagement', p: 15 },
             { l: 'From target admission region', g: 'Fit', p: 20 }
@@ -721,18 +826,31 @@ export default function LeadEnginePage() {
                       Session Memory:
                     </span>
                     <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 ${
+                      sessionLead.course
+                        ? 'bg-blue-400/20 text-blue-300 border border-blue-400/40 shadow-2xs'
+                        : 'bg-white/10 text-[#A1ADBC]'
+                    }`}>
+                      {sessionLead.course ? `✓ Course: ${sessionLead.course}` : 'Course: Exploring'}
+                    </span>
+                    <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 transition-all ${
+                      sessionLead.branch
+                        ? 'bg-[#4ADE9B]/20 text-[#4ADE9B] border border-[#4ADE9B]/40 shadow-2xs font-extrabold'
+                        : sessionLead.course === 'B.Tech'
+                        ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 animate-pulse font-extrabold'
+                        : 'bg-white/10 text-[#A1ADBC]'
+                    }`}>
+                      {sessionLead.branch
+                        ? `✓ Branch: ${sessionLead.branch}`
+                        : sessionLead.course === 'B.Tech'
+                        ? '⚡ Branch: Pending (Choose CSE / Civil / ECE / Mech)'
+                        : 'Branch: Pending'}
+                    </span>
+                    <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 ${
                       sessionLead.marks
                         ? 'bg-[#4ADE9B]/20 text-[#4ADE9B] border border-[#4ADE9B]/40 shadow-2xs'
                         : 'bg-white/10 text-[#A1ADBC]'
                     }`}>
                       {sessionLead.marks ? `✓ 12th Marks: ${sessionLead.marks}` : '12th Marks: Pending'}
-                    </span>
-                    <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 ${
-                      sessionLead.course
-                        ? 'bg-[#F2B54A]/20 text-[#F2B54A] border border-[#F2B54A]/40 shadow-2xs'
-                        : 'bg-white/10 text-[#A1ADBC]'
-                    }`}>
-                      {sessionLead.course ? `✓ Branch: ${sessionLead.course}` : 'Branch: Exploring'}
                     </span>
                     <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 ${
                       sessionLead.phone
@@ -742,11 +860,18 @@ export default function LeadEnginePage() {
                       {sessionLead.phone ? `✓ Mobile: ${sessionLead.phone}` : 'Mobile: Pending'}
                     </span>
                   </div>
-                  {sessionLead.name && (
-                    <span className="text-[11px] font-extrabold text-[#F2B54A] bg-[#153866] px-2.5 py-0.5 rounded-lg border border-[#F2B54A]/30">
-                      👤 {sessionLead.name}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {sessionLead.assignedCounsellor && (
+                      <span className="text-[10px] font-extrabold text-[#F2B54A] bg-[#153866] px-2.5 py-0.5 rounded-full border border-[#F2B54A]/30 flex items-center gap-1">
+                        🎯 {sessionLead.assignedCounsellor}
+                      </span>
+                    )}
+                    {sessionLead.name && (
+                      <span className="text-[11px] font-extrabold text-[#F2B54A] bg-[#153866] px-2.5 py-0.5 rounded-lg border border-[#F2B54A]/30">
+                        👤 {sessionLead.name}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Messages Feed (Background: #F4F6F9) */}
@@ -784,8 +909,8 @@ export default function LeadEnginePage() {
                                 <div className="grid grid-cols-2 gap-2 text-[11px]">
                                   <div>Student: <strong className="text-[#1B2433]">{m.leadInfo.name}</strong></div>
                                   <div>Mobile: <strong className="font-mono text-[#1B2433]">{m.leadInfo.phone}</strong></div>
-                                  <div>Course: <strong className="text-[#1B2433]">{m.leadInfo.course || 'B.Tech CSE'}</strong></div>
-                                  <div>Assigned: <strong className="text-[#0B2545]">{m.leadInfo.assigned_counsellor}</strong></div>
+                                  <div>Course &amp; Branch: <strong className="text-[#1B2433]">{m.leadInfo.branch || m.leadInfo.course || 'B.Tech CSE'}</strong></div>
+                                  <div>Assigned Counsellor: <strong className="text-[#0B2545]">{m.leadInfo.assigned_counsellor}</strong></div>
                                 </div>
                                 <div className="pt-1 flex items-center gap-2">
                                   <button
@@ -850,32 +975,40 @@ export default function LeadEnginePage() {
                     <Zap className="w-3.5 h-3.5 text-[#F2B54A]" /> Quick Options:
                   </span>
                   {(
-                    sessionLead.course && !sessionLead.marks
+                    sessionLead.course === 'B.Tech' && !sessionLead.branch
                       ? [
-                          "📊 My 12th is 75%, calculate my scholarship",
-                          "📊 My 12th is 60%, calculate my scholarship",
-                          `💰 2026 Fee Structure for ${sessionLead.course}`,
-                          "🏛️ Schedule Campus Tour"
+                          "💻 B.Tech Computer Science (CSE)",
+                          "🏗️ B.Tech Civil Engineering",
+                          "⚡ B.Tech Electronics (ECE)",
+                          "⚙️ B.Tech Mechanical Engineering"
                         ]
-                      : sessionLead.marks && !sessionLead.course
+                      : sessionLead.branch && !sessionLead.marks
                       ? [
-                          "🎓 B.Tech Computer Science & Engineering",
-                          "🎓 B.Tech AI & Data Science",
-                          "🎓 MBA Programme",
-                          "🎓 BCA Programme"
+                          `📊 My 12th is 75%, calculate my ${sessionLead.branch} scholarship`,
+                          `📊 My 12th is 60%, calculate my ${sessionLead.branch} scholarship`,
+                          `💰 2026 Fee Structure for ${sessionLead.branch}`,
+                          `👩‍💼 Connect with ${sessionLead.branch} Counsellor`
                         ]
-                      : sessionLead.marks && sessionLead.course && !sessionLead.phone
+                      : sessionLead.marks && !sessionLead.branch
                       ? [
-                          "📲 My number is 9829011001, send brochure on WhatsApp",
-                          "💰 Calculate exact fee after scholarship",
-                          "👩‍💼 Connect to Senior Counsellor",
-                          "🏛️ Schedule Campus Visit"
+                          "💻 B.Tech Computer Science (CSE)",
+                          "🏗️ B.Tech Civil Engineering",
+                          "⚡ B.Tech Electronics (ECE)",
+                          "⚙️ B.Tech Mechanical Engineering"
+                        ]
+                      : sessionLead.branch && sessionLead.marks && !sessionLead.phone
+                      ? [
+                          `📲 My number is 9829011001, connect with ${sessionLead.branch} counsellor`,
+                          `💰 Calculate exact fee after scholarship`,
+                          `👩‍💼 Assign Dedicated ${sessionLead.branch} Counsellor`,
+                          `🏛️ Schedule Campus Visit`
                         ]
                       : [
-                          "Fees for B.Tech Computer Science?",
-                          "What are the MBA placements and packages?",
-                          "Hostel fees & campus facilities?",
-                          "Do you offer merit scholarships on 12th marks?"
+                          "Which B.Tech engineering branches do you offer?",
+                          "💻 B.Tech Computer Science (CSE)",
+                          "🏗️ B.Tech Civil Engineering",
+                          "⚡ B.Tech Electronics (ECE)",
+                          "⚙️ B.Tech Mechanical Engineering"
                         ]
                   ).map((chip, idx) => (
                     <button
@@ -1295,47 +1428,323 @@ export default function LeadEnginePage() {
 
           {/* TAB 5: COUNSELLORS */}
           {activeTab === 'team' && (
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-              <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-extrabold text-slate-900">Admission Counsellor Roster &amp; Capacity</h2>
-                  <p className="text-xs text-slate-500">Round-robin programme groups, SLA compliance rate, and calendar sync</p>
+            <div className="space-y-6">
+              {/* 4 Branch Capacity Overview Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 1. Computer Science (CSE) Card */}
+                <div 
+                  onClick={() => setCounsellorBranchFilter(counsellorBranchFilter === 'CSE' ? 'all' : 'CSE')}
+                  className={`p-4 rounded-3xl border transition-all cursor-pointer shadow-xs ${
+                    counsellorBranchFilter === 'CSE' 
+                      ? 'bg-blue-50/80 border-blue-400 ring-2 ring-blue-500' 
+                      : 'bg-white border-slate-200 hover:border-blue-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl">💻</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900">
+                      5 Counsellors
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-black text-slate-900 mt-2">Computer Science (CSE)</h3>
+                  <p className="text-[11px] text-slate-500 font-medium">Core CSE, AI &amp; ML, Cyber, Cloud</p>
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                    <span className="text-slate-600">Active Leads:</span>
+                    <span className="text-blue-700 font-mono">
+                      {leadsList.filter(l => (l.branch || '').toLowerCase().includes('computer') || (l.branch || '').toLowerCase().includes('cse')).length} Leads
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                    <span>Team Capacity:</span>
+                    <span className="font-mono font-semibold">
+                      {COUNSELLORS.filter(c => c.branch === 'CSE').reduce((sum, c) => sum + c.maxOpen, 0)} Max
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Civil Engineering Card */}
+                <div 
+                  onClick={() => setCounsellorBranchFilter(counsellorBranchFilter === 'Civil' ? 'all' : 'Civil')}
+                  className={`p-4 rounded-3xl border transition-all cursor-pointer shadow-xs ${
+                    counsellorBranchFilter === 'Civil' 
+                      ? 'bg-amber-50/80 border-amber-400 ring-2 ring-amber-500' 
+                      : 'bg-white border-slate-200 hover:border-amber-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl">🏗️</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900">
+                      5 Counsellors
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-black text-slate-900 mt-2">Civil Engineering</h3>
+                  <p className="text-[11px] text-slate-500 font-medium">Structures, Highway, Smart Cities</p>
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                    <span className="text-slate-600">Active Leads:</span>
+                    <span className="text-amber-800 font-mono">
+                      {leadsList.filter(l => (l.branch || '').toLowerCase().includes('civil')).length} Leads
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                    <span>Team Capacity:</span>
+                    <span className="font-mono font-semibold">
+                      {COUNSELLORS.filter(c => c.branch === 'Civil').reduce((sum, c) => sum + c.maxOpen, 0)} Max
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Electronics (ECE) Card */}
+                <div 
+                  onClick={() => setCounsellorBranchFilter(counsellorBranchFilter === 'Electronic' ? 'all' : 'Electronic')}
+                  className={`p-4 rounded-3xl border transition-all cursor-pointer shadow-xs ${
+                    counsellorBranchFilter === 'Electronic' 
+                      ? 'bg-purple-50/80 border-purple-400 ring-2 ring-purple-500' 
+                      : 'bg-white border-slate-200 hover:border-purple-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl">⚡</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-900">
+                      5 Counsellors
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-black text-slate-900 mt-2">Electronics (ECE)</h3>
+                  <p className="text-[11px] text-slate-500 font-medium">VLSI Chips, Embedded IoT, 5G</p>
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                    <span className="text-slate-600">Active Leads:</span>
+                    <span className="text-purple-700 font-mono">
+                      {leadsList.filter(l => (l.branch || '').toLowerCase().includes('electronic') || (l.branch || '').toLowerCase().includes('ece')).length} Leads
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                    <span>Team Capacity:</span>
+                    <span className="font-mono font-semibold">
+                      {COUNSELLORS.filter(c => c.branch === 'Electronic').reduce((sum, c) => sum + c.maxOpen, 0)} Max
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4. Mechanical Engineering Card */}
+                <div 
+                  onClick={() => setCounsellorBranchFilter(counsellorBranchFilter === 'Mechanical' ? 'all' : 'Mechanical')}
+                  className={`p-4 rounded-3xl border transition-all cursor-pointer shadow-xs ${
+                    counsellorBranchFilter === 'Mechanical' 
+                      ? 'bg-emerald-50/80 border-emerald-400 ring-2 ring-emerald-500' 
+                      : 'bg-white border-slate-200 hover:border-emerald-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl">⚙️</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900">
+                      5 Counsellors
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-black text-slate-900 mt-2">Mechanical Engineering</h3>
+                  <p className="text-[11px] text-slate-500 font-medium">EV &amp; Auto, Robotics, CAD/CAM</p>
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                    <span className="text-slate-600">Active Leads:</span>
+                    <span className="text-emerald-800 font-mono">
+                      {leadsList.filter(l => (l.branch || '').toLowerCase().includes('mech')).length} Leads
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
+                    <span>Team Capacity:</span>
+                    <span className="font-mono font-semibold">
+                      {COUNSELLORS.filter(c => c.branch === 'Mechanical').reduce((sum, c) => sum + c.maxOpen, 0)} Max
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-500 font-extrabold border-b border-slate-200">
-                      <th className="p-3.5">Counsellor</th>
-                      <th className="p-3.5">Programme Group</th>
-                      <th className="p-3.5">Open Leads / Max</th>
-                      <th className="p-3.5">Hot Leads</th>
-                      <th className="p-3.5">Calendar Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {COUNSELLORS.map(c => {
-                      const mine = leadsList.filter(l => l.c === c.id);
-                      const myOpen = mine.filter(l => !['APPLIED', 'ENROLLED', 'LOST', 'DISQUALIFIED'].includes(l.status));
-                      const myHot = myOpen.filter(l => l.tier === 'Hot');
-                      return (
-                        <tr key={c.id}>
-                          <td className="p-3.5">
-                            <div className="font-extrabold text-slate-900">{c.name}</div>
-                            <div className="font-mono text-slate-500 text-[11px]">{c.phone}</div>
-                          </td>
-                          <td className="p-3.5 font-semibold text-slate-800">{c.group}</td>
-                          <td className="p-3.5 font-mono font-bold text-slate-900">{myOpen.length} / {c.maxOpen}</td>
-                          <td className="p-3.5 font-mono font-extrabold text-orange-600">{myHot.length}</td>
-                          <td className="p-3.5 text-emerald-700 font-semibold flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            {c.calendar}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+
+              {/* Counsellor Roster Table with Branch Filters */}
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+                <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                      <UserCheck className="w-4 h-4 text-[#0B2545]" />
+                      Admission Counsellor Roster &amp; Branch Assignment
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Round-robin routing ensures leads are routed to counsellors specialized in student&apos;s chosen engineering branch
+                    </p>
+                  </div>
+
+                  {/* Branch Filter Pills */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setCounsellorBranchFilter('all')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        counsellorBranchFilter === 'all'
+                          ? 'bg-[#0B2545] text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      All Branches ({COUNSELLORS.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCounsellorBranchFilter('CSE')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        counsellorBranchFilter === 'CSE'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                      }`}
+                    >
+                      💻 CSE (5)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCounsellorBranchFilter('Civil')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        counsellorBranchFilter === 'Civil'
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                      }`}
+                    >
+                      🏗️ Civil (5)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCounsellorBranchFilter('Electronic')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        counsellorBranchFilter === 'Electronic'
+                          ? 'bg-purple-600 text-white shadow-xs'
+                          : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                      }`}
+                    >
+                      ⚡ Electronic / ECE (5)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCounsellorBranchFilter('Mechanical')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        counsellorBranchFilter === 'Mechanical'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                      }`}
+                    >
+                      ⚙️ Mechanical (5)
+                    </button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-500 font-extrabold border-b border-slate-200">
+                        <th className="p-3.5">Counsellor</th>
+                        <th className="p-3.5">Assigned Branch &amp; Domain Focus</th>
+                        <th className="p-3.5">Open Leads / Max Capacity</th>
+                        <th className="p-3.5">Hot Leads</th>
+                        <th className="p-3.5">Daily Hours</th>
+                        <th className="p-3.5">Calendar Status</th>
+                        <th className="p-3.5 text-right">Quick Contact</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {COUNSELLORS.filter(c => counsellorBranchFilter === 'all' || c.branch === counsellorBranchFilter).map(c => {
+                        const mine = leadsList.filter(l => l.c === c.id);
+                        const myOpen = mine.filter(l => !['APPLIED', 'ENROLLED', 'LOST', 'DISQUALIFIED'].includes(l.status));
+                        const myHot = myOpen.filter(l => l.tier === 'Hot');
+                        const capacityPct = Math.min(100, Math.round((myOpen.length / c.maxOpen) * 100));
+
+                        return (
+                          <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="p-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                                  c.branch === 'CSE' ? 'bg-blue-100 text-blue-800' :
+                                  c.branch === 'Civil' ? 'bg-amber-100 text-amber-800' :
+                                  c.branch === 'Electronic' ? 'bg-purple-100 text-purple-800' :
+                                  c.branch === 'Mechanical' ? 'bg-emerald-100 text-emerald-800' :
+                                  'bg-slate-100 text-slate-800'
+                                }`}>
+                                  {c.name.split(' ').map(n => n[0]).join('')}
+                                </div>
+                                <div>
+                                  <div className="font-extrabold text-slate-900">{c.name}</div>
+                                  <div className="font-mono text-slate-500 text-[11px]">{c.phone}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                                  c.branch === 'CSE' ? 'bg-blue-100 text-blue-900 border border-blue-200' :
+                                  c.branch === 'Civil' ? 'bg-amber-100 text-amber-900 border border-amber-200' :
+                                  c.branch === 'Electronic' ? 'bg-purple-100 text-purple-900 border border-purple-200' :
+                                  c.branch === 'Mechanical' ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' :
+                                  'bg-slate-100 text-slate-800'
+                                }`}>
+                                  {c.branch === 'CSE' && '💻 CSE'}
+                                  {c.branch === 'Civil' && '🏗️ Civil'}
+                                  {c.branch === 'Electronic' && '⚡ Electronic'}
+                                  {c.branch === 'Mechanical' && '⚙️ Mechanical'}
+                                  {c.branch === 'Other' && 'General'}
+                                </span>
+                                <span className="font-semibold text-slate-800 text-[11px]">{c.specialization || c.group}</span>
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-[11px]">
+                                  <span className="font-mono font-bold text-slate-900">{myOpen.length} / {c.maxOpen}</span>
+                                  <span className="text-slate-400 font-mono text-[10px]">{capacityPct}%</span>
+                                </div>
+                                <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full rounded-full ${
+                                      capacityPct > 80 ? 'bg-red-500' : capacityPct > 50 ? 'bg-amber-500' : 'bg-emerald-500'
+                                    }`} 
+                                    style={{ width: `${capacityPct}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              {myHot.length > 0 ? (
+                                <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-extrabold bg-orange-100 text-orange-800 border border-orange-200 flex items-center gap-1 w-fit">
+                                  <Flame className="w-3 h-3 fill-orange-600 text-orange-600" />
+                                  {myHot.length}
+                                </span>
+                              ) : (
+                                <span className="font-mono text-slate-400">0</span>
+                              )}
+                            </td>
+                            <td className="p-3.5 font-mono text-slate-600 text-[11px]">
+                              {c.hours}
+                            </td>
+                            <td className="p-3.5 text-emerald-700 font-semibold flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                              {c.calendar}
+                            </td>
+                            <td className="p-3.5 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <a
+                                  href={`https://wa.me/${c.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hello ${c.name}, here is a student inquiry for ${c.group}.`)}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors"
+                                  title="WhatsApp Counsellor"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                </a>
+                                <a
+                                  href={`tel:${c.phone}`}
+                                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                                  title="Call Counsellor"
+                                >
+                                  <PhoneCall className="w-3.5 h-3.5" />
+                                </a>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1465,6 +1874,8 @@ export default function LeadEnginePage() {
                   <div>Channel: <strong>{selectedLead.channel}</strong></div>
                   <div>City: <strong>{selectedLead.city}</strong></div>
                   <div>Status: <strong>{selectedLead.status}</strong></div>
+                  <div>Branch: <strong className="text-slate-900">{selectedLead.branch || '—'}</strong></div>
+                  <div>Assigned Counsellor: <strong className="text-slate-900">{getCounsellorName(selectedLead.c)}</strong></div>
                 </div>
               </div>
             </div>

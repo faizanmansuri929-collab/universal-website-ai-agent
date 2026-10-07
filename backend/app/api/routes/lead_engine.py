@@ -28,7 +28,8 @@ def get_db():
 class CaptureLeadRequest(BaseModel):
     name: str
     phone: str
-    course: Optional[str] = "B.Tech Computer Science"
+    course: Optional[str] = "B.Tech"
+    branch: Optional[str] = "Computer Science (CSE)"
     email: Optional[str] = ""
     city: Optional[str] = "Jaipur"
     state: Optional[str] = "Rajasthan"
@@ -44,6 +45,7 @@ class CapturedLeadResponse(BaseModel):
     phone: str
     email: Optional[str] = ""
     course: str
+    branch: Optional[str] = ""
     city: str
     state: str
     score: int
@@ -54,6 +56,39 @@ class CapturedLeadResponse(BaseModel):
     assigned_counsellor: str
     created_at: str
     message: str
+
+
+# 4 B.Tech Engineering Branches - 5 Demo Counsellors Each (20 Total)
+BRANCH_COUNSELLORS_POOL = {
+    "cse": [
+        "Neha Mathur (B.Tech CSE - Lead)",
+        "Saurabh Gupta (B.Tech CSE - AI & ML)",
+        "Priya Nair (B.Tech CSE - Cyber Security)",
+        "Rohan Verma (B.Tech CSE - Data Science)",
+        "Ananya Sen (B.Tech CSE - Software Systems)"
+    ],
+    "civil": [
+        "Rajesh Sharma (B.Tech Civil - Lead)",
+        "Manoj Kumar (B.Tech Civil - Structures)",
+        "Deepak Meena (B.Tech Civil - Infrastructure)",
+        "Sunita Kaswan (B.Tech Civil - Urban Planning)",
+        "Pooja Choudhary (B.Tech Civil - Water Resources)"
+    ],
+    "electronic": [
+        "Vikram Joshi (B.Tech Electronics - Lead)",
+        "Sunita Rao (B.Tech Electronics - VLSI & IoT)",
+        "Abhishek Rathore (B.Tech Electronics - 5G Telecom)",
+        "Meenakshi Sen (B.Tech Electronics - Robotics)",
+        "Karan Singhania (B.Tech Electronics - Circuits)"
+    ],
+    "mechanical": [
+        "Ajay Meena (B.Tech Mechanical - Lead)",
+        "Sandeep Verma (B.Tech Mechanical - Automobile & EV)",
+        "Harish Pareek (B.Tech Mechanical - CAD/CAM)",
+        "Divya Rathore (B.Tech Mechanical - Thermal & Aero)",
+        "Naveen Choudhary (B.Tech Mechanical - Automation)"
+    ]
+}
 
 
 @router.post("/capture", response_model=CapturedLeadResponse)
@@ -130,20 +165,61 @@ async def capture_direct_lead(
         tier = "Cold"
         temperature = "COLD"
         
-    # Assign Counsellor based on course
-    course_lower = clean_course.lower()
-    if any(k in course_lower for k in ["bba", "mba", "commerce", "management"]):
-        assigned_counsellor = "Amit Joshi (Management & Commerce)"
-    elif any(k in course_lower for k in ["design", "b.des", "interior", "fashion"]):
-        assigned_counsellor = "Ritu Saxena (Design & Arts)"
+    # Assign Counsellor based on course & branch (20 Demo Counsellors across 4 Branches)
+    clean_course = payload.course.strip() if payload.course else "B.Tech"
+    clean_branch = payload.branch.strip() if payload.branch else ""
+
+    # Priority 1: Check payload.branch directly
+    branch_lower = clean_branch.lower()
+    if any(k in branch_lower for k in ["mechanical", "mech", "automobile", "thermal", "मैकेनिकल"]):
+        clean_branch = "Mechanical Engineering"
+        clean_course = "B.Tech"
+        assigned_counsellor = BRANCH_COUNSELLORS_POOL["mechanical"][0]
+    elif any(k in branch_lower for k in ["civil", "construction", "सिविल"]):
+        clean_branch = "Civil Engineering"
+        clean_course = "B.Tech"
+        assigned_counsellor = BRANCH_COUNSELLORS_POOL["civil"][0]
+    elif any(k in branch_lower for k in ["electronic", "electronics", "ece", "electrical", "vlsi", "telecom", "इलेक्ट्रॉनिक", "ईसीई"]):
+        clean_branch = "Electronics Engineering (ECE)"
+        clean_course = "B.Tech"
+        assigned_counsellor = BRANCH_COUNSELLORS_POOL["electronic"][0]
+    elif any(k in branch_lower for k in ["cse", "computer science", "ai", "data science", "software", "कम्प्यूटर"]):
+        clean_branch = "Computer Science (CSE)"
+        clean_course = "B.Tech"
+        assigned_counsellor = BRANCH_COUNSELLORS_POOL["cse"][0]
     else:
-        assigned_counsellor = "Neha Mathur (Engineering & Computing)"
+        # Priority 2: Fallback to combined course and branch search (loose 'ee' removed!)
+        course_branch_combined = (clean_course + " " + clean_branch).lower()
+        if any(k in course_branch_combined for k in ["mechanical", "mech", "automobile", "thermal", "मैकेनिकल"]):
+            clean_branch = "Mechanical Engineering"
+            clean_course = "B.Tech"
+            assigned_counsellor = BRANCH_COUNSELLORS_POOL["mechanical"][0]
+        elif any(k in course_branch_combined for k in ["civil", "construction", "सिविल"]):
+            clean_branch = "Civil Engineering"
+            clean_course = "B.Tech"
+            assigned_counsellor = BRANCH_COUNSELLORS_POOL["civil"][0]
+        elif any(k in course_branch_combined for k in ["electronic", "electronics", "ece", "electrical", "vlsi", "telecom", "इलेक्ट्रॉनिक", "ईसीई"]):
+            clean_branch = "Electronics Engineering (ECE)"
+            clean_course = "B.Tech"
+            assigned_counsellor = BRANCH_COUNSELLORS_POOL["electronic"][0]
+        elif any(k in course_branch_combined for k in ["cse", "computer science", "ai", "data science", "software", "कम्प्यूटर"]):
+            clean_branch = "Computer Science (CSE)"
+            clean_course = "B.Tech"
+            assigned_counsellor = BRANCH_COUNSELLORS_POOL["cse"][0]
+        elif any(k in course_branch_combined for k in ["bba", "mba", "commerce", "management"]):
+            clean_branch = "Management"
+            assigned_counsellor = "Amit Joshi (Management & Commerce)"
+        elif any(k in course_branch_combined for k in ["design", "b.des", "interior", "fashion"]):
+            clean_branch = "Design & Arts"
+            assigned_counsellor = "Ritu Saxena (Design & Arts)"
+        else:
+            clean_branch = "Computer Science (CSE)"
+            assigned_counsellor = BRANCH_COUNSELLORS_POOL["cse"][0]
         
     lead_id = f"L-{uuid.uuid4().hex[:6].upper()}"
-    summary = payload.chat_summary or f"Student {clean_name} ({formatted_phone}) interested in {clean_course} from {clean_city}. Shared direct contact for admission guidance."
+    summary = payload.chat_summary or f"Student {clean_name} ({formatted_phone}) interested in {clean_course} - {clean_branch} from {clean_city}. Shared direct contact for branch admission guidance."
     
     # Save to AdmissionLeadDB in existing SQLite database
-    # Find default agent or create dummy link
     default_agent = db.query(AgentDB).first()
     agent_id = default_agent.id if default_agent else "agent_default"
     
@@ -156,6 +232,7 @@ async def capture_direct_lead(
         city=clean_city,
         state=payload.state or "Rajasthan",
         course_name=clean_course,
+        preferred_department=clean_branch,
         lead_score=score,
         lead_temperature=temperature,
         academic_qualification="ELIGIBLE",
@@ -181,6 +258,7 @@ async def capture_direct_lead(
         phone=formatted_phone,
         email=payload.email or "",
         course=clean_course,
+        branch=clean_branch,
         city=clean_city,
         state=payload.state or "Rajasthan",
         score=score,
@@ -190,7 +268,7 @@ async def capture_direct_lead(
         summary=summary,
         assigned_counsellor=assigned_counsellor,
         created_at=now_str,
-        message="Lead successfully captured and saved to database. No OTP required."
+        message="Lead successfully captured and assigned to branch counsellor. No OTP required."
     )
 
 
@@ -200,7 +278,7 @@ async def get_lead_engine_leads(
     db: Session = Depends(get_db)
 ):
     """
-    Returns real leads saved in AdmissionLeadDB database.
+    Returns real leads saved in AdmissionLeadDB database with branch info.
     """
     db_leads = db.query(AdmissionLeadDB).order_by(desc(AdmissionLeadDB.created_at)).all()
     
@@ -211,14 +289,15 @@ async def get_lead_engine_leads(
             "name": l.student_name,
             "phone": l.mobile_number,
             "email": l.email or "",
-            "course": l.course_name or "B.Tech Computer Science",
+            "course": l.course_name or "B.Tech",
+            "branch": l.preferred_department or "Computer Science (CSE)",
             "city": l.city or "Jaipur",
             "state": l.state or "Rajasthan",
             "score": l.lead_score or 65,
             "tier": "Hot" if (l.lead_score or 0) >= 70 else ("Warm" if (l.lead_score or 0) >= 40 else "Cold"),
             "status": "QUALIFIED" if (l.lead_score or 0) >= 40 else "NEW",
             "source": "Live Web Chat" if l.source == "REAL_CHAT" else "Demo Data",
-            "summary": l.qualification_status or f"Enquiry for {l.course_name}",
+            "summary": l.qualification_status or f"Enquiry for {l.course_name} ({l.preferred_department})",
             "created_at": l.created_at.strftime("%Y-%m-%d %H:%M") if l.created_at else "Just now"
         })
         
@@ -238,6 +317,7 @@ def extract_lead_context_from_history(user_message: str, history: List[ChatMessa
     ctx = {
         "percentage": None,
         "course": None,
+        "branch": None,
         "phone": None,
         "name": None
     }
@@ -254,21 +334,34 @@ def extract_lead_context_from_history(user_message: str, history: List[ChatMessa
             matched_val += '%'
         ctx["percentage"] = matched_val
     
-    # 2. Course / Branch
-    if any(k in full_text for k in ["b.tech cse", "btech cse", "computer science", "cse", "कम्प्यूटर साइंस", "सी.एस.ई"]):
-        ctx["course"] = "B.Tech Computer Science & Engineering"
-    elif any(k in full_text for k in ["ai & ds", "ai ds", "artificial intelligence", "data science", "एआई"]):
-        ctx["course"] = "B.Tech AI & Data Science"
+    # 2. Specific B.Tech Engineering Branches (4 Core Branches: CSE, Civil, Electronic, Mechanical)
+    if any(k in full_text for k in ["mechanical", "mech", "automobile", "thermal", "मैकेनिकल"]):
+        ctx["course"] = "B.Tech"
+        ctx["branch"] = "Mechanical Engineering"
+    elif any(k in full_text for k in ["civil", "civil engineering", "construction", "सिविल"]):
+        ctx["course"] = "B.Tech"
+        ctx["branch"] = "Civil Engineering"
+    elif any(k in full_text for k in ["electronic", "electronics", "ece", "electrical", "vlsi", "telecom", "इलेक्ट्रॉनिक", "ईसीई"]):
+        ctx["course"] = "B.Tech"
+        ctx["branch"] = "Electronics Engineering (ECE)"
+    elif any(k in full_text for k in ["b.tech cse", "btech cse", "computer science", "cse", "ai & ds", "data science", "software", "कम्प्यूटर साइंस", "सी.एस.ई"]):
+        ctx["course"] = "B.Tech"
+        ctx["branch"] = "Computer Science (CSE)"
     elif any(k in full_text for k in ["b.tech", "btech", "engineering", "इंजीनियरिंग", "बी.टेक"]):
         ctx["course"] = "B.Tech"
+        # branch remains None (Pending)
     elif "mba" in full_text or "एमबीए" in full_text:
         ctx["course"] = "MBA"
+        ctx["branch"] = "Management"
     elif "bca" in full_text or "बीसीए" in full_text:
         ctx["course"] = "BCA"
+        ctx["branch"] = "Computer Applications"
     elif "bba" in full_text or "बीबीए" in full_text:
         ctx["course"] = "BBA"
+        ctx["branch"] = "Business Administration"
     elif any(k in full_text for k in ["b.des", "bdes", "design", "डिजाइन"]):
         ctx["course"] = "B.Des"
+        ctx["branch"] = "Design & Arts"
         
     # 3. Phone (10 digits)
     m_phone = re.search(r'\b[6-9]\d{9}\b', full_text)
@@ -280,7 +373,7 @@ def extract_lead_context_from_history(user_message: str, history: List[ChatMessa
         m_name = re.search(r'\b(?:my name is|mera nam|mera name|naam|name is|i am|नाम)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)\b', txt, re.IGNORECASE)
         if m_name:
             candidate = m_name.group(1).strip().title()
-            if candidate.lower() not in ["interested", "looking", "asking", "student", "btech", "mba", "bca"]:
+            if candidate.lower() not in ["interested", "looking", "asking", "student", "btech", "mba", "bca", "civil", "mechanical"]:
                 ctx["name"] = candidate
                 break
             
@@ -295,8 +388,10 @@ def build_lead_system_prompt(lead_ctx: Dict[str, Any]) -> str:
         known_facts.append(f"- 12th Marks / Percentage: {lead_ctx['percentage']} (RECORDED - DO NOT ASK AGAIN)")
         forbidden_questions.append("CRITICAL: 12th marks/percentage is ALREADY KNOWN. NEVER ask what percentage they got or for their 12th PCM marks.")
     if lead_ctx["course"]:
-        known_facts.append(f"- Target Course/Branch: {lead_ctx['course']} (RECORDED - DO NOT ASK AGAIN)")
-        forbidden_questions.append(f"CRITICAL: The student has selected {lead_ctx['course']}. NEVER ask for their branch preference or course.")
+        known_facts.append(f"- Target Course: {lead_ctx['course']} (RECORDED)")
+    if lead_ctx["branch"]:
+        known_facts.append(f"- Target Branch: {lead_ctx['branch']} (RECORDED - DO NOT ASK AGAIN)")
+        forbidden_questions.append(f"CRITICAL: The student has selected {lead_ctx['branch']}. NEVER ask for their branch preference.")
     if lead_ctx["name"]:
         known_facts.append(f"- Student Name: {lead_ctx['name']} (RECORDED)")
         forbidden_questions.append(f"Address the student warmly as {lead_ctx['name']}.")
@@ -308,22 +403,35 @@ def build_lead_system_prompt(lead_ctx: Dict[str, Any]) -> str:
     forbidden_section = "\n".join(["- " + q for q in forbidden_questions]) if forbidden_questions else "- None."
 
     # Dynamic Lead Capture Directive
-    if lead_ctx["course"] and not lead_ctx["percentage"] and not lead_ctx["phone"]:
+    if lead_ctx["course"] == "B.Tech" and not lead_ctx["branch"]:
+        lead_directive = """CRITICAL LEAD GENERATION GOAL:
+The student wants to join B.Tech, but their specific ENGINEERING BRANCH is PENDING.
+Poornima University offers 4 core engineering branches with dedicated admission counsellors:
+1. Computer Science & Engineering (CSE)
+2. Civil Engineering
+3. Electronics Engineering (ECE)
+4. Mechanical Engineering
+
+In your response:
+Answer their query concisely in 2-3 sentences.
+THEN YOU MUST ALWAYS END by asking:
+"Which branch of B.Tech are you interested in pursuing — **Computer Science (CSE)**, **Civil**, **Electronic (ECE)**, or **Mechanical**? (We will assign your enquiry directly to that branch's dedicated admission counsellor!)" """
+    elif lead_ctx["branch"] and not lead_ctx["percentage"] and not lead_ctx["phone"]:
         lead_directive = f"""CRITICAL LEAD GENERATION GOAL:
-The student is interested in {lead_ctx['course']}, but their 12th marks and contact number are PENDING.
-After providing a crisp answer about {lead_ctx['course']} (2-3 sentences max), YOU MUST ALWAYS END by asking:
-"To calculate your exact merit scholarship discount (up to 80-100% waiver) for {lead_ctx['course']} and send the official 2026 fee sheet, could you please share your **12th Percentage or PCM marks** along with your **Mobile Number**?" """
-    elif lead_ctx["percentage"] and not lead_ctx["course"]:
+The student has selected {lead_ctx['branch']}, but their 12th marks and contact number are PENDING.
+After providing a crisp answer about {lead_ctx['branch']} (2-3 sentences max), YOU MUST ALWAYS END by asking:
+"To calculate your exact merit scholarship discount (up to 80-100% waiver) for {lead_ctx['branch']} and send the official 2026 fee sheet, could you please share your **12th Percentage or PCM marks** along with your **Mobile Number**?" """
+    elif lead_ctx["percentage"] and not lead_ctx["branch"]:
         lead_directive = f"""CRITICAL LEAD GENERATION GOAL:
-The student has shared 12th marks ({lead_ctx['percentage']}), but course and contact number are PENDING.
-YOU MUST ALWAYS END by asking which branch or program they want to pursue (e.g. B.Tech CSE, AI & Data Science, BCA, MBA)."""
-    elif lead_ctx["course"] and lead_ctx["percentage"] and not lead_ctx["phone"]:
+The student has shared 12th marks ({lead_ctx['percentage']}), but their branch is PENDING.
+YOU MUST ALWAYS END by asking which branch of B.Tech they prefer — **CSE**, **Civil**, **Electronic**, or **Mechanical**."""
+    elif lead_ctx["branch"] and lead_ctx["percentage"] and not lead_ctx["phone"]:
         lead_directive = f"""CRITICAL LEAD GENERATION GOAL:
-Both course ({lead_ctx['course']}) and 12th marks ({lead_ctx['percentage']}) are recorded!
+Both branch ({lead_ctx['branch']}) and 12th marks ({lead_ctx['percentage']}) are recorded!
 YOU MUST ALWAYS END by asking for their **Name** and **10-digit WhatsApp/Mobile Number** to send the official 2026 scholarship allotment letter directly to WhatsApp."""
     elif not lead_ctx["course"] and not lead_ctx["percentage"] and not lead_ctx["phone"]:
         lead_directive = """CRITICAL LEAD GENERATION GOAL:
-Answer the student's question, and END by asking what course/branch they are interested in, and inviting them to share their 12th marks or mobile number for WhatsApp fee sheet dispatch."""
+Answer the student's question, and END by asking what branch (e.g. B.Tech CSE, Civil, Electronic, Mechanical) they are interested in, and inviting them to share their 12th marks or mobile number for WhatsApp fee sheet dispatch."""
     else:
         lead_directive = "All core details are recorded! Confirm counsellor assignment and invite them for a campus visit."
 
@@ -351,7 +459,7 @@ def sanitize_lead_response(text: str, ctx: Dict[str, Any]) -> str:
     cleaned_paragraphs = []
     
     pct_keywords = ['12th', 'pcm', 'marks', 'percentage', '12वीं', 'प्रतिशत', 'अंक', '12th pcm']
-    course_keywords = ['branch', 'specialization', 'preferred branch', 'course', 'शाखा', 'पसंद', 'कोर्स']
+    branch_keywords = ['branch', 'specialization', 'preferred branch', 'course', 'शाखा', 'पसंद', 'कोर्स']
     phone_keywords = ['phone', 'mobile', 'whatsapp', 'contact', 'फोन', 'मोबाइल', 'नंबर']
     ask_patterns = [
         'may i know', 'could you', 'please share', 'share your', 'tell me', 'what is your',
@@ -367,8 +475,8 @@ def sanitize_lead_response(text: str, ctx: Dict[str, Any]) -> str:
         if ctx.get('percentage') and any(w in p_lower for w in pct_keywords) and any(q in p_lower for q in ask_patterns):
             should_drop = True
             
-        # Check if paragraph is asking for course when already known
-        if ctx.get('course') and any(w in p_lower for w in course_keywords) and any(q in p_lower for q in ask_patterns):
+        # Check if paragraph is asking for branch when already known
+        if ctx.get('branch') and any(w in p_lower for w in branch_keywords) and any(q in p_lower for q in ask_patterns):
             should_drop = True
             
         # Check if paragraph is asking for phone when already known
@@ -390,7 +498,8 @@ async def chat_lead_engine(
     """
     Dedicated AI Admission Chat tuned specifically for Lead Generation & Conversion.
     Grounds all responses in poornima.org live web search while proactively guiding
-    prospective students to share contact details for counsellor follow-up.
+    prospective students to select their engineering branch (CSE, Civil, Electronic, Mechanical)
+    and share contact details for branch counsellor follow-up.
     """
     seed_poornima_allowlist(db)
     
@@ -415,27 +524,31 @@ async def chat_lead_engine(
     clean_ans = sanitize_lead_response(response.answer, lead_ctx)
 
     # Deterministic Lead Generation Focus Guarantee:
-    # Ensure every response proactively steers towards missing lead details!
     if not lead_ctx["phone"]:
-        if lead_ctx["course"] and not lead_ctx["percentage"]:
-            # User gave course (e.g. B.Tech CSE), but percentage & phone are missing!
+        if lead_ctx["course"] == "B.Tech" and not lead_ctx["branch"]:
+            # User enquired about B.Tech but has not chosen branch yet!
+            if "which branch" not in clean_ans.lower() and "cse" not in clean_ans.lower():
+                clean_ans += "\n\n🎯 **Branch Selection:** Which B.Tech engineering branch are you aiming for — **Computer Science (CSE)**, **Civil**, **Electronic (ECE)**, or **Mechanical**? (We'll assign your enquiry directly to that branch's dedicated admission counsellor!)"
+        elif lead_ctx["branch"] and not lead_ctx["percentage"]:
+            # Branch is known, percentage & phone are missing
             if "12th" not in clean_ans.lower() and "percentage" not in clean_ans.lower() and "marks" not in clean_ans.lower() and "scholarship" not in clean_ans.lower():
-                clean_ans += f"\n\n🎯 **Next Step for Admission:** To calculate your exact merit scholarship discount (up to 80-100% tuition waiver) for {lead_ctx['course']}, could you please share your **12th Percentage or PCM score**? (Or feel free to share your **Mobile Number** to receive the official 2026 fee sheet directly on WhatsApp!)"
-        elif lead_ctx["percentage"] and not lead_ctx["course"]:
-            # User gave percentage, but course is missing!
-            if "branch" not in clean_ans.lower() and "course" not in clean_ans.lower():
-                clean_ans += "\n\n🎯 **Next Step for Admission:** Which branch or program are you exploring (e.g. B.Tech CSE, AI & Data Science, BCA, MBA) so I can verify seat availability and specific fee criteria?"
-        elif lead_ctx["percentage"] and lead_ctx["course"]:
-            # User gave both percentage and course, but phone is missing!
+                clean_ans += f"\n\n🎯 **Next Step for {lead_ctx['branch']}:** To calculate your exact merit scholarship discount (up to 80-100% tuition waiver) for {lead_ctx['branch']}, could you please share your **12th Percentage or PCM score**? (Or feel free to share your **Mobile Number** to receive the official 2026 fee sheet directly on WhatsApp!)"
+        elif lead_ctx["percentage"] and not lead_ctx["branch"]:
+            # Percentage is known, branch is missing
+            if "branch" not in clean_ans.lower() and "cse" not in clean_ans.lower():
+                clean_ans += "\n\n🎯 **Next Step for Admission:** Which engineering branch are you exploring — **Computer Science (CSE)**, **Civil**, **Electronic (ECE)**, or **Mechanical**?"
+        elif lead_ctx["percentage"] and lead_ctx["branch"]:
+            # Both percentage and branch are known, phone missing
             if "mobile number" not in clean_ans.lower() and "whatsapp" not in clean_ans.lower():
-                clean_ans += f"\n\n💡 *Tip: Feel free to share your **Name** and **10-digit Mobile Number** so I can send the official {lead_ctx['course']} 2026 fee sheet and scholarship allotment letter directly to your WhatsApp!*"
+                clean_ans += f"\n\n💡 *Tip: Feel free to share your **Name** and **10-digit Mobile Number** so your dedicated {lead_ctx['branch']} admission counsellor can send the official 2026 fee sheet and scholarship allotment letter directly to your WhatsApp!*"
         elif not lead_ctx["course"] and not lead_ctx["percentage"]:
             # General enquiry
-            if "course" not in clean_ans.lower() and "programme" not in clean_ans.lower():
-                clean_ans += "\n\nWhich course or branch are you planning to pursue (e.g. B.Tech CSE, MBA, BCA)? Share your **12th marks** or **mobile number** to get the official 2026 fee sheet on WhatsApp!"
+            if "branch" not in clean_ans.lower() and "course" not in clean_ans.lower():
+                clean_ans += "\n\nWhich B.Tech branch are you planning to pursue — **CSE**, **Civil**, **Electronic**, or **Mechanical**? Share your **12th marks** or **mobile number** to get the official 2026 fee sheet on WhatsApp!"
     elif lead_ctx["phone"] and lead_ctx["name"]:
+        target_br = lead_ctx["branch"] or "B.Tech"
         if "counsellor" not in clean_ans.lower() and "advisor" not in clean_ans.lower():
-            clean_ans += f"\n\n✅ *Your enquiry has been assigned to your senior admission counsellor. Would you like to schedule an in-person campus tour or discuss hostel accommodations?*"
+            clean_ans += f"\n\n✅ *Your enquiry has been assigned to your dedicated {target_br} admission counsellor. Would you like to schedule an in-person campus tour or discuss hostel accommodations?*"
 
     response.answer = clean_ans
     return response
