@@ -46,8 +46,8 @@ export default function AssistantWizard() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [botMode, setBotMode] = useState<'voice_search' | 'web_search' | 'hardcoded' | 'ai'>('web_search');
-  const [collegeName, setCollegeName] = useState('Poornima University');
-  const [url, setUrl] = useState('https://www.poornima.org/sitemap.xml');
+  const [collegeName, setCollegeName] = useState('Demo Website');
+  const [url, setUrl] = useState('https://example.com/sitemap.xml');
   const [sector, setSector] = useState('college');
   const [scope, setScope] = useState<'entire_website' | 'subpath' | 'current_page'>('entire_website');
   const [subpath, setSubpath] = useState('/admissions');
@@ -447,48 +447,6 @@ export default function AssistantWizard() {
                     <Search className="w-3 h-3" /> Live text search · Citations
                   </p>
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBotMode('hardcoded')}
-                  className={`card card-hover !rounded-2xl p-4 text-left space-y-2 ${
-                    botMode === 'hardcoded' ? 'bot-opt-active' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-sm flex items-center gap-1.5">
-                      <Zap className="w-4 h-4 text-amber-500" /> Instant Answers
-                    </span>
-                    {botMode === 'hardcoded' && <span className="badge badge-emerald">Selected</span>}
-                  </div>
-                  <p className="text-xs t3 leading-relaxed">
-                    Prepares answers from your content once, then replies instantly — lower running costs per conversation.
-                  </p>
-                  <p className="pt-2 border-t bd text-[10px] font-semibold text-blue-700 flex items-center gap-1.5">
-                    <Zap className="w-3 h-3" /> Instant speed · Lower cost
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBotMode('ai')}
-                  className={`card card-hover !rounded-2xl p-4 text-left space-y-2 ${
-                    botMode === 'ai' ? 'bot-opt-active' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-sm flex items-center gap-1.5">
-                      <Bot className="w-4 h-4 text-violet-600" /> AI Knowledge Assistant
-                    </span>
-                    {botMode === 'ai' && <span className="badge badge-emerald">Selected</span>}
-                  </div>
-                  <p className="text-xs t3 leading-relaxed">
-                    Understands questions in context and reasons over your website content to answer, with citations.
-                  </p>
-                  <p className="pt-2 border-t bd text-[10px] font-semibold text-violet-700 flex items-center gap-1.5">
-                    <Brain className="w-3 h-3" /> Semantic understanding · Citations
-                  </p>
-                </button>
               </div>
             </section>
           )}
@@ -511,12 +469,12 @@ export default function AssistantWizard() {
                     id="home-college-name-input"
                     value={collegeName}
                     onChange={(e) => setCollegeName(e.target.value)}
-                    placeholder="e.g. poornima.org or Poornima University"
+                    placeholder="e.g. yourcompany.com or Demo Company"
                     className="input !pl-10"
                     autoComplete="organization"
                   />
                 </div>
-                <p className="field-hint mt-1.5">Example: <em>poornima.org</em> → Grounded on your official website domain.</p>
+                <p className="field-hint mt-1.5">Example: <em>yourcompany.com</em> → Grounded on your official website domain.</p>
               </div>
             </section>
           )}
@@ -534,18 +492,10 @@ export default function AssistantWizard() {
                   <div className="flex items-center gap-2 text-[11px]">
                     <button
                       type="button"
-                      onClick={() => fillQuickUrl('Poornima University', 'https://www.poornima.org/sitemap.xml')}
-                      className="text-[var(--teal)] hover:underline font-semibold flex items-center gap-1"
-                    >
-                      <Sparkles className="w-3 h-3" /> poornima.org
-                    </button>
-                    <span className="t3">·</span>
-                    <button
-                      type="button"
-                      onClick={() => fillQuickUrl('XYZ College', 'https://www.xyzcollege.edu.in/')}
+                      onClick={() => fillQuickUrl('Demo Company', 'https://example.com/sitemap.xml')}
                       className="text-[var(--primary)] hover:underline font-semibold flex items-center gap-1"
                     >
-                      xyzcollege.edu.in
+                      <Sparkles className="w-3 h-3" /> example.com/sitemap.xml
                     </button>
                   </div>
                 </div>
@@ -851,7 +801,7 @@ export default function AssistantWizard() {
                   <Bot className="w-3.5 h-3.5" />
                 </div>
                 <div className="chat-bubble !text-[11px]">
-                  Hi! I'm the assistant for <strong>{collegeName.trim() || 'your organization'}</strong>. Ask me anything about fees, courses, timings — anything on our website.
+                  Hi! I'm the assistant for <strong>{collegeName.trim() || 'your organization'}</strong>. Ask me anything about our services, products, timings — anything on our website.
                 </div>
               </div>
 
@@ -886,11 +836,11 @@ export default function AssistantWizard() {
             <Link href="/college-web-search" className="app-nav-link">
               <Globe className="w-4 h-4 text-emerald-600" /> <span>Live Web Search</span>
             </Link>
-            <Link href="/xyz-college" className="app-nav-link">
-              <GraduationCap className="w-4 h-4 text-blue-600" /> <span>XYZ College Assistant</span>
-            </Link>
             <Link href="/lead-engine" className="app-nav-link">
               <Users className="w-4 h-4 text-teal-600" /> <span>Lead Engine</span>
+            </Link>
+            <Link href="/test-voice" className="app-nav-link">
+              <Radio className="w-4 h-4 text-rose-500" /> <span>Test Voice</span>
             </Link>
           </div>
         </aside>

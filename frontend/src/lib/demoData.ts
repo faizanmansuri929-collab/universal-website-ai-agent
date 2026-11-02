@@ -105,22 +105,22 @@ export interface DemoQA {
 
 export const DEMO_QA: DemoQA[] = [
   {
-    q: 'What can OmniAgent do?',
-    keys: ['what', 'omniagent', 'can', 'do', 'your product', 'platform', 'who are'],
-    a: `OmniAgent turns your existing website into an AI assistant that can:\n\n- **Answer questions** from your live pages, with clickable sources\n- **Capture leads** — names, emails and phone numbers, in conversation\n- **Speak with visitors** using a real-time voice assistant\n- **Work around the clock** so common questions never wait for office hours\n\nYou create it in three steps: add your website URL, let OmniAgent read your pages, then launch.`,
-    sources: ['omniagent-ai.example/docs']
+    q: 'What can Yui AI do?',
+    keys: ['what', 'yui', 'yui ai', 'can', 'do', 'your product', 'platform', 'who are'],
+    a: `Yui AI turns your existing website into an AI assistant that can:\n\n- **Answer questions** from your live pages, with clickable sources\n- **Capture leads** — names, emails and phone numbers, in conversation\n- **Speak with visitors** using a real-time voice assistant\n- **Work around the clock** so common questions never wait for office hours\n\nYou create it in three steps: add your website URL, let Yui AI read your pages, then launch.`,
+    sources: ['yui.ai/docs']
   },
   {
     q: 'How do I create an assistant?',
     keys: ['how', 'create', 'build', 'start', 'setup', 'set up', 'make', 'assistant'],
-    a: `Creating an assistant takes three steps:\n\n1. **Add your website** — paste your homepage or sitemap URL\n2. **We read your pages** — OmniAgent discovers your content and prepares answers\n3. **Launch** — configure, test and deploy\n\nTry it now: click **Get started** at the top of this page.`,
+    a: `Creating an assistant takes three steps:\n\n1. **Add your website** — paste your homepage or sitemap URL\n2. **We read your pages** — Yui AI discovers your content and prepares answers\n3. **Launch** — configure, test and deploy\n\nTry it now: click **Get started** at the top of this page.`,
     sources: null
   },
   {
     q: 'Can it capture leads for my team?',
     keys: ['lead', 'capture', 'sales', 'crm', 'contact', 'email', 'phone'],
     a: `Yes. The assistant can ask for a visitor's name, email and phone during the conversation, then:\n\n- Score the lead based on what was captured\n- Track its status from **New → Contacted → Qualified → Converted**\n- Export everything to CSV for your CRM\n\nOpen the **Lead Engine** inside the product to see the dashboard.`,
-    sources: ['omniagent-ai.example/leads']
+    sources: ['yui.ai/leads']
   }
 ];
 

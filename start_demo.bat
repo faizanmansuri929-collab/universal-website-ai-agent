@@ -1,7 +1,7 @@
 @echo off
 setlocal
 echo ========================================================
-echo   OmniAgent AI - Universal Website AI Agent Platform
+echo   Yui AI Console - Universal Website AI Agent Platform
 echo ========================================================
 
 netstat -ano | findstr /R /C:":8000 .*LISTENING" >nul

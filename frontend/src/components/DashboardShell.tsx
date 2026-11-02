@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Bot, Plus, Mic, Globe, GraduationCap, Users, ArrowLeft,
-  Moon, Sun, Menu, X
+  Moon, Sun, Menu, X, Radio
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface DashboardShellProps {
   children: React.ReactNode;
-  activeNav?: 'home' | 'college-voice-search' | 'college-web-search' | 'xyz-college' | 'lead-engine';
+  activeNav?: 'home' | 'college-voice-search' | 'college-web-search' | 'xyz-college' | 'lead-engine' | 'test-voice';
 }
 
 export default function DashboardShell({ children, activeNav }: DashboardShellProps) {
@@ -29,7 +29,7 @@ export default function DashboardShell({ children, activeNav }: DashboardShellPr
     }).catch(() => {});
 
     try {
-      const saved = localStorage.getItem('omniagent_theme');
+      const saved = localStorage.getItem('yui_theme') || localStorage.getItem('omniagent_theme');
       if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark');
         setIsDark(true);
@@ -53,9 +53,11 @@ export default function DashboardShell({ children, activeNav }: DashboardShellPr
     setIsDark(nextDark);
     if (nextDark) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('yui_theme', 'dark');
       localStorage.setItem('omniagent_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('yui_theme', 'light');
       localStorage.setItem('omniagent_theme', 'light');
     }
   };
@@ -64,22 +66,25 @@ export default function DashboardShell({ children, activeNav }: DashboardShellPr
     pathname === '/college-voice-search' ? 'college-voice-search' :
     pathname === '/college-web-search' ? 'college-web-search' :
     pathname === '/xyz-college' ? 'xyz-college' :
-    pathname === '/lead-engine' ? 'lead-engine' : 'home'
+    pathname === '/lead-engine' ? 'lead-engine' :
+    pathname === '/test-voice' ? 'test-voice' : 'home'
   );
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text-1)]">
       <div className="flex min-h-screen">
         {/* Sidebar (desktop) */}
-        <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r bd sf sticky top-0 h-screen z-30">
-          <div className="p-4 border-b bd flex items-center gap-2.5">
+        <aside className="hidden lg:flex flex-col w-64 shrink-0 app-sidebar sticky top-0 h-screen z-30">
+          <div className="p-4 border-b border-white/10 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-violet-600 flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform">
-                <Bot className="w-5 h-5 text-white" />
-              </div>
+              <img
+                src="/logo.png"
+                alt="Yui AI"
+                className="h-[30px] w-auto bg-white rounded-lg p-[3px] shrink-0 shadow-sm transition-transform group-hover:scale-105"
+              />
               <div>
-                <p className="font-extrabold text-sm leading-none">OmniAgent AI</p>
-                <p className="text-[10px] t3 mt-1">Workspace</p>
+                <b className="font-['Poppins'] font-bold text-base text-white leading-tight block">Yui AI</b>
+                <small className="text-[11px] text-[#9FA1CC] leading-none block font-normal">Console</small>
               </div>
             </Link>
           </div>
@@ -91,14 +96,14 @@ export default function DashboardShell({ children, activeNav }: DashboardShellPr
             >
               <Plus className="w-4 h-4" />
               <span>Create Assistant</span>
-              <span className="ml-auto text-[9px] t3 font-medium">New crawl</span>
+              <span className="ml-auto text-[9px] text-[#9FA1CC] font-medium">New crawl</span>
             </Link>
 
             <Link
               href="/college-voice-search"
               className={`app-nav-link ${currentTab === 'college-voice-search' ? 'active' : ''}`}
             >
-              <Mic className="w-4 h-4 text-teal-600" />
+              <Mic className="w-4 h-4 text-emerald-400" />
               <span>Voice Assistant</span>
               <span className="badge badge-amber ml-auto">Beta</span>
             </Link>
@@ -107,31 +112,32 @@ export default function DashboardShell({ children, activeNav }: DashboardShellPr
               href="/college-web-search"
               className={`app-nav-link ${currentTab === 'college-web-search' ? 'active' : ''}`}
             >
-              <Globe className="w-4 h-4 text-emerald-600" />
+              <Globe className="w-4 h-4 text-emerald-400" />
               <span>Live Web Search</span>
-            </Link>
-
-            <Link
-              href="/xyz-college"
-              className={`app-nav-link ${currentTab === 'xyz-college' ? 'active' : ''}`}
-            >
-              <GraduationCap className="w-4 h-4 text-blue-600" />
-              <span>XYZ College Assistant</span>
             </Link>
 
             <Link
               href="/lead-engine"
               className={`app-nav-link ${currentTab === 'lead-engine' ? 'active' : ''}`}
             >
-              <Users className="w-4 h-4 text-teal-600" />
+              <Users className="w-4 h-4 text-emerald-400" />
               <span>Lead Engine</span>
               <span className="badge badge-teal ml-auto">New</span>
             </Link>
+
+            <Link
+              href="/test-voice"
+              className={`app-nav-link ${currentTab === 'test-voice' ? 'active' : ''}`}
+            >
+              <Radio className="w-4 h-4 text-rose-400 animate-pulse" />
+              <span>Test Voice</span>
+              <span className="badge !bg-rose-500/20 !text-rose-200 !border-rose-400/30 ml-auto">Live</span>
+            </Link>
           </nav>
 
-          <div className="p-3 border-t bd space-y-2">
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] t3">
-              <span className={`w-2 h-2 rounded-full shrink-0 ${isBackendConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+          <div className="p-3 border-t border-white/10 space-y-2">
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] text-[#9FA1CC]">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${isBackendConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
               <span>{isBackendConnected ? 'Backend connected' : 'Demo mode — backend not connected'}</span>
             </div>
             <button
@@ -146,7 +152,7 @@ export default function DashboardShell({ children, activeNav }: DashboardShellPr
                 </>
               ) : (
                 <>
-                  <Moon className="w-4 h-4 text-slate-600" />
+                  <Moon className="w-4 h-4 text-slate-300" />
                   <span>Dark mode</span>
                 </>
               )}
@@ -170,10 +176,15 @@ export default function DashboardShell({ children, activeNav }: DashboardShellPr
               <Menu className="w-5 h-5" />
             </button>
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-violet-600 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
+              <img
+                src="/logo.png"
+                alt="Yui AI"
+                className="h-7 w-auto bg-white rounded-lg p-1 shrink-0 shadow-sm"
+              />
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-['Poppins'] font-bold text-sm">Yui AI</span>
+                <span className="text-[10px] text-[var(--text-3)] font-medium">Console</span>
               </div>
-              <span className="font-extrabold text-sm">OmniAgent AI</span>
             </Link>
             <button
               onClick={toggleTheme}
@@ -194,20 +205,25 @@ export default function DashboardShell({ children, activeNav }: DashboardShellPr
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[80]" role="dialog" aria-label="App navigation">
           <div
-            className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
           ></div>
-          <aside className="absolute left-0 top-0 h-full w-72 sf border-r bd p-4 space-y-1 drawer-panel overflow-y-auto z-10 shadow-2xl">
-            <div className="flex items-center justify-between px-1 pb-3 mb-2 border-b bd">
+          <aside className="absolute left-0 top-0 h-full w-72 app-sidebar p-4 space-y-1 drawer-panel overflow-y-auto z-10 shadow-2xl">
+            <div className="flex items-center justify-between px-1 pb-3 mb-2 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-violet-600 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
+                <img
+                  src="/logo.png"
+                  alt="Yui AI"
+                  className="h-8 w-auto bg-white rounded-lg p-1 shrink-0 shadow-sm"
+                />
+                <div>
+                  <b className="font-['Poppins'] font-bold text-sm text-white leading-tight block">Yui AI</b>
+                  <small className="text-[10px] text-[#9FA1CC] leading-none block font-normal">Console</small>
                 </div>
-                <span className="font-extrabold text-sm">OmniAgent AI</span>
               </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-[var(--surface-3)]"
+                className="p-1.5 rounded-lg text-[#C7C8E6] hover:text-white hover:bg-white/10"
                 aria-label="Close menu"
               >
                 <X className="w-4 h-4" />
@@ -243,21 +259,22 @@ export default function DashboardShell({ children, activeNav }: DashboardShellPr
             </Link>
 
             <Link
-              href="/xyz-college"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`app-nav-link ${currentTab === 'xyz-college' ? 'active' : ''}`}
-            >
-              <GraduationCap className="w-4 h-4 text-blue-600" />
-              <span>XYZ College Assistant</span>
-            </Link>
-
-            <Link
               href="/lead-engine"
               onClick={() => setMobileMenuOpen(false)}
               className={`app-nav-link ${currentTab === 'lead-engine' ? 'active' : ''}`}
             >
               <Users className="w-4 h-4 text-teal-600" />
               <span>Lead Engine</span>
+            </Link>
+
+            <Link
+              href="/test-voice"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`app-nav-link ${currentTab === 'test-voice' ? 'active' : ''}`}
+            >
+              <Radio className="w-4 h-4 text-purple-600" />
+              <span>Test Voice</span>
+              <span className="badge !bg-purple-500/15 !text-purple-700 dark:!text-purple-300 !border-purple-500/30 ml-auto">Live</span>
             </Link>
 
             <div className="pt-3 mt-2 border-t bd space-y-1">

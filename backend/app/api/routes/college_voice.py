@@ -49,13 +49,14 @@ def _check_rate_limit(ip: str) -> bool:
 # ---------------------------------------------------------------------------
 class CreateVoiceSessionRequest(BaseModel):
     project_id: str = Field(..., min_length=1)
-    voice: Literal["alloy", "ash", "ballad", "cedar", "coral", "echo", "marin", "sage", "shimmer", "verse"] = "verse"
+    voice: Literal["alloy", "ash", "ballad", "cedar", "coral", "echo", "marin", "sage", "shimmer", "verse", "nira", "neera"] = "verse"
     language: Literal["en-IN", "hi"] = "en-IN"
     mode: Literal["hands_free", "push_to_talk"] = "push_to_talk"
     mic_profile: Literal["near_field", "far_field"] = "near_field"
     barge_in: bool = False
     vad_threshold: Optional[float] = 0.5
     silence_duration_ms: Optional[int] = 650
+    model: Optional[str] = None
 
     @field_validator("vad_threshold")
     @classmethod
@@ -78,6 +79,7 @@ class VoiceSessionResponse(BaseModel):
     project_id: str
     college_name: str
     base_domain: str
+    model: Optional[str] = None
 
 
 class VoiceSearchToolRequest(BaseModel):
@@ -123,6 +125,23 @@ class VoiceSourceOut(BaseModel):
     title: str
     url: str
     category: Optional[str] = "General"
+
+
+class LiveSessionRequest(BaseModel):
+    project_id: str = Field(..., min_length=1)
+    sdp: str = Field(..., min_length=1)
+    voice: Optional[str] = "nira"
+    language: Optional[str] = "hi"
+    model: Optional[str] = "gpt-live-1"
+
+
+class LiveSessionResponse(BaseModel):
+    session_id: str
+    sdp: str
+    model: str
+    voice: str
+    college_name: str
+    base_domain: str
 
 
 class VoiceTurnResponse(BaseModel):
@@ -260,6 +279,11 @@ async def create_voice_realtime_session(
     # TASK A: build keywords from project data
     kw = _build_keywords(college_name, base_domain)
 
+    # TASK B: remap voice for legacy client_secrets endpoint if unsupported
+    secret_voice = payload.voice
+    if secret_voice in ("nira", "neera"):
+        secret_voice = "shimmer"
+
     base_session = {
         "session": {
             "type": "realtime",
@@ -272,7 +296,7 @@ async def create_voice_realtime_session(
                     "turn_detection": turn_detection_config
                 },
                 "output": {
-                    "voice": payload.voice,
+                    "voice": secret_voice,
                     "speed": 1.0
                 }
             },
@@ -285,8 +309,13 @@ async def create_voice_realtime_session(
         "Content-Type": "application/json"
     }
 
+    models_to_try = [payload.model] if payload.model and payload.model != "gpt-live-1" else []
+    for m in REALTIME_MODEL_FALLBACK:
+        if m != "gpt-live-1" and m not in models_to_try:
+            models_to_try.append(m)
+
     async with httpx.AsyncClient(timeout=20.0) as client:
-        for idx, model in enumerate(REALTIME_MODEL_FALLBACK):
+        for idx, model in enumerate(models_to_try):
             attempt = copy.deepcopy(base_session)
             attempt["session"]["model"] = model
 
@@ -316,7 +345,8 @@ async def create_voice_realtime_session(
                     session_id=sess_id,
                     project_id=payload.project_id,
                     college_name=college_name,
-                    base_domain=base_domain
+                    base_domain=base_domain,
+                    model=model
                 )
 
             # TASK B: retry ONLY on 4xx param errors, not on 401/429/5xx
@@ -334,6 +364,128 @@ async def create_voice_realtime_session(
             # else: loop to next model (400-class param error)
 
     raise HTTPException(status_code=502, detail="Voice service could not start a session.")
+
+
+# ---------------------------------------------------------------------------
+# Full-Duplex WebRTC Live Session: /live-session (gpt-live-1 + Nira Voice)
+# ---------------------------------------------------------------------------
+@router.post("/live-session", response_model=LiveSessionResponse)
+async def create_live_webrtc_session(
+    request: Request,
+    payload: LiveSessionRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Direct WebRTC SDP Exchange with OpenAI's GPT-Live API (/v1/live/sessions).
+    Connects browser microphone and speaker directly to gpt-live-1 using
+    the native Nira Hindi voice profile.
+    """
+    client_ip = request.client.host if request.client else "unknown"
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(status_code=429, detail="Too many live session requests. Please wait.")
+
+    project = db.query(CollegeWebSearchProjectDB).filter(
+        CollegeWebSearchProjectDB.id == payload.project_id
+    ).first()
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail=f"College project '{payload.project_id}' not found."
+        )
+
+    raw_college_name = project.college_name or "Poornima University"
+    if raw_college_name.startswith("http://") or raw_college_name.startswith("https://") or "/" in raw_college_name:
+        college_name = project.base_domain or raw_college_name.replace("https://", "").replace("http://", "").strip("/")
+    else:
+        college_name = raw_college_name
+    base_domain = project.base_domain or "poornima.org"
+
+    api_key = settings.OPENAI_API_KEY
+    if not api_key:
+        raise HTTPException(status_code=500, detail="OpenAI API key is missing.")
+
+    # Build rich Hindi admission counselor instructions for gpt-live-1
+    instructions = (
+        f"You are Neera (नीरा), the official AI voice admission counselor for {college_name} ({base_domain}).\n"
+        f"You speak naturally, warmly, and politely in fluent Hindi and Hinglish with a soft Indian female tone.\n"
+        f"Always greet the user warmly with 'नमस्ते' when they greet you.\n"
+        f"You answer student questions about B.Tech CSE, MBA, MCA, tuition fees, semester breakdown, hostel facilities (AC/Non-AC), mess, admission criteria, and placements.\n"
+        f"IMPORTANT: Keep your spoken voice replies concise (1 to 3 clear, pleasant sentences in Hindi). "
+        f"Detailed numbers, full fee breakdown tables, and official links will be displayed on the student's screen.\n"
+        f"Never invent false information; refer to {base_domain} as the official verified source."
+    )
+
+    chosen_voice = payload.voice or "nira"
+    chosen_model = payload.model or "gpt-live-1"
+
+    live_body = {
+        "session": {
+            "model": chosen_model,
+            "audio": {
+                "output": {
+                    "voice": chosen_voice
+                }
+            },
+            "instructions": instructions
+        },
+        "transport": {
+            "type": "webrtc",
+            "sdp": payload.sdp
+        }
+    }
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    async with httpx.AsyncClient(timeout=25.0) as client:
+        resp = await client.post(
+            "https://api.openai.com/v1/live/sessions",
+            headers=headers,
+            json=live_body
+        )
+
+        if resp.status_code in (200, 201):
+            data = resp.json()
+            answer_sdp = data.get("transport", {}).get("sdp", "")
+            session_id = data.get("session", {}).get("id", "")
+            return LiveSessionResponse(
+                session_id=session_id,
+                sdp=answer_sdp,
+                model=chosen_model,
+                voice=chosen_voice,
+                college_name=college_name,
+                base_domain=base_domain
+            )
+
+        print(f"[LiveSession] Primary failed ({resp.status_code}): {resp.text[:300]}")
+
+        # Fallback if voice error: try with 'alloy' or 'shimmer'
+        if resp.status_code == 400 and "voice" in resp.text:
+            live_body["session"]["audio"]["output"]["voice"] = "shimmer"
+            fallback_resp = await client.post(
+                "https://api.openai.com/v1/live/sessions",
+                headers=headers,
+                json=live_body
+            )
+            if fallback_resp.status_code in (200, 201):
+                data = fallback_resp.json()
+                answer_sdp = data.get("transport", {}).get("sdp", "")
+                session_id = data.get("session", {}).get("id", "")
+                return LiveSessionResponse(
+                    session_id=session_id,
+                    sdp=answer_sdp,
+                    model=chosen_model,
+                    voice="shimmer",
+                    college_name=college_name,
+                    base_domain=base_domain
+                )
+
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to establish live session with voice engine: {resp.text[:200]}"
+        )
 
 
 # ---------------------------------------------------------------------------

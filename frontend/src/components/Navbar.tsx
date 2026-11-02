@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Bot, Sparkles, Globe, GraduationCap, Mic, Menu, X, Users,
-  Moon, Sun
+  Moon, Sun, Radio
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -15,7 +15,7 @@ export default function Navbar() {
 
   useEffect(() => {
     try {
-      const savedTheme = localStorage.getItem('omniagent_theme');
+      const savedTheme = localStorage.getItem('yui_theme') || localStorage.getItem('omniagent_theme');
       if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark');
         setIsDark(true);
@@ -31,9 +31,11 @@ export default function Navbar() {
     setIsDark(nextDark);
     if (nextDark) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('yui_theme', 'dark');
       localStorage.setItem('omniagent_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('yui_theme', 'light');
       localStorage.setItem('omniagent_theme', 'light');
     }
   };
@@ -43,14 +45,16 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group" onClick={() => setIsMobileMenuOpen(false)}>
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform shrink-0">
-            <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Yui AI"
+            className="h-8 sm:h-9 w-auto bg-white rounded-lg p-[3px] shrink-0 shadow-sm border border-[var(--border)] group-hover:scale-105 transition-transform"
+          />
           <div>
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-extrabold text-base sm:text-lg tracking-tight">OmniAgent AI</span>
-              <span className="badge badge-blue text-[10px] sm:text-xs">
-                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-blue-600" /> Live
+              <span className="font-['Poppins'] font-bold text-base sm:text-lg tracking-tight text-[var(--indigo)] dark:text-white">Yui AI</span>
+              <span className="badge badge-amber text-[10px] sm:text-xs">
+                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#E11D48]" /> Console
               </span>
             </div>
             <p className="text-[10px] sm:text-xs t3 hidden xs:block">Universal Website-to-AI Assistant</p>
@@ -70,6 +74,19 @@ export default function Navbar() {
             <Users className="w-3.5 h-3.5 text-teal-600" />
             <span>Lead Engine</span>
             <span className="px-1.5 py-0.2 rounded bg-teal-600 text-white text-[10px] font-black">NEW</span>
+          </Link>
+
+          <Link
+            href="/test-voice"
+            className={`text-xs lg:text-sm font-extrabold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all shadow-xs ${
+              pathname === '/test-voice'
+                ? 'bg-purple-600 text-white border-purple-600'
+                : 'sf t1 border-[var(--border)] hover:bg-[var(--surface-3)]'
+            }`}
+          >
+            <Radio className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+            <span>Test Voice</span>
+            <span className="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 text-[10px] font-black">LIVE</span>
           </Link>
 
           <Link
@@ -96,19 +113,6 @@ export default function Navbar() {
             <Globe className="w-4 h-4 text-emerald-600" />
             <span>Web Search</span>
             <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">BETA</span>
-          </Link>
-
-          <Link
-            href="/xyz-college"
-            className={`text-xs lg:text-sm font-semibold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all shadow-xs ${
-              pathname === '/xyz-college'
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'badge-blue hover:brightness-105'
-            }`}
-          >
-            <GraduationCap className="w-3.5 h-3.5 text-blue-600" />
-            <span>XYZ College</span>
-            <span className="px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-700 dark:text-blue-300 text-[10px] font-bold">BETA</span>
           </Link>
 
           <Link
@@ -177,6 +181,18 @@ export default function Navbar() {
           </Link>
 
           <Link
+            href="/test-voice"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="flex items-center justify-between p-2.5 rounded-xl sf2 border bd text-xs font-extrabold"
+          >
+            <div className="flex items-center gap-2">
+              <Radio className="w-4 h-4 text-purple-600 animate-pulse" />
+              <span>Test Voice Studio</span>
+            </div>
+            <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 text-[10px] font-black">LIVE</span>
+          </Link>
+
+          <Link
             href="/college-voice-search"
             onClick={() => setIsMobileMenuOpen(false)}
             className="flex items-center justify-between p-2.5 rounded-xl badge-teal text-xs font-bold"
@@ -198,18 +214,6 @@ export default function Navbar() {
               <span>College Web Search</span>
             </div>
             <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">BETA</span>
-          </Link>
-
-          <Link
-            href="/xyz-college"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="flex items-center justify-between p-2.5 rounded-xl badge-blue text-xs font-bold"
-          >
-            <div className="flex items-center gap-2">
-              <GraduationCap className="w-4 h-4 text-blue-600" />
-              <span>XYZ College Assistant</span>
-            </div>
-            <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-700 dark:text-blue-300 text-[10px] font-bold">BETA</span>
           </Link>
 
           <Link

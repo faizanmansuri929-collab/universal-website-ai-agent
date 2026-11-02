@@ -31,7 +31,7 @@ function HomePageContent() {
 
   useEffect(() => {
     try {
-      const savedTheme = localStorage.getItem('omniagent_theme');
+      const savedTheme = localStorage.getItem('yui_theme') || localStorage.getItem('omniagent_theme');
       if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark');
         setIsDark(true);
@@ -53,9 +53,11 @@ function HomePageContent() {
     setIsDark(nextDark);
     if (nextDark) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('yui_theme', 'dark');
       localStorage.setItem('omniagent_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('yui_theme', 'light');
       localStorage.setItem('omniagent_theme', 'light');
     }
   };
@@ -109,14 +111,16 @@ function HomePageContent() {
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex items-center gap-2.5 group"
-            aria-label="OmniAgent AI home"
+            aria-label="Yui AI Console home"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-violet-600 flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform">
-              <Bot className="w-5 h-5 text-white" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="Yui AI"
+              className="h-8 sm:h-9 w-auto bg-white rounded-lg p-[3px] shrink-0 shadow-sm border border-[var(--border)] group-hover:scale-105 transition-transform"
+            />
             <div className="text-left hidden xs:block sm:block">
-              <span className="font-extrabold text-base tracking-tight">OmniAgent AI</span>
-              <p className="text-[10px] t3 leading-none mt-0.5 hidden sm:block">Universal Website-to-AI Assistant</p>
+              <span className="font-['Poppins'] font-bold text-base sm:text-lg tracking-tight text-[var(--indigo)] dark:text-white">Yui AI</span>
+              <p className="text-[10px] t3 leading-none mt-0.5 hidden sm:block">Console &bull; Website-to-AI Assistant</p>
             </div>
           </button>
 
@@ -388,7 +392,7 @@ function HomePageContent() {
                 Live in three simple steps
               </h2>
               <p className="t2 text-sm sm:text-base">
-                No engineers, no manual document uploads — OmniAgent reads your live site directly.
+                No engineers, no manual document uploads — Yui AI reads your live site directly.
               </p>
             </div>
 
@@ -399,7 +403,7 @@ function HomePageContent() {
                 </span>
                 <h3 className="font-bold">Add your website</h3>
                 <p className="text-xs t3 leading-relaxed">
-                  Paste your homepage or sitemap URL. OmniAgent discovers public pages automatically.
+                  Paste your homepage or sitemap URL. Yui AI discovers public pages automatically.
                 </p>
               </div>
 
@@ -614,7 +618,7 @@ function HomePageContent() {
                 <TrendingUp className="w-3 h-3" /> Business value
               </span>
               <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-                Why teams choose OmniAgent
+                Why teams choose Yui AI
               </h2>
             </div>
 
@@ -749,13 +753,16 @@ function HomePageContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid sm:grid-cols-3 gap-8 text-sm">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-violet-600 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-extrabold">OmniAgent AI</span>
+              <img
+                src="/logo.png"
+                alt="Yui AI"
+                className="h-7 w-auto bg-white rounded-lg p-1 shrink-0 shadow-sm border border-[var(--border)]"
+              />
+              <span className="font-['Poppins'] font-bold text-base text-[var(--indigo)] dark:text-white">Yui AI</span>
+              <span className="text-xs text-[var(--text-3)] font-medium">Console</span>
             </div>
             <p className="t3 text-xs leading-relaxed max-w-xs">
-              Universal Website-to-AI Assistant. Demo build — simulated content is clearly labelled; backend integrations are documented in the code.
+              Universal Website-to-AI Assistant Platform. Grounded RAG, ultra-low latency voice, live web search, and CRM lead capture.
             </p>
           </div>
 
@@ -779,7 +786,7 @@ function HomePageContent() {
           </div>
         </div>
         <div className="border-t bd py-4 text-center text-[11px] t3">
-          © OmniAgent AI — demo build for demonstration.
+          &copy; {new Date().getFullYear()} Yui AI Console &mdash; Universal Website-to-AI Assistant.
         </div>
       </footer>
     </div>

@@ -651,7 +651,7 @@ export default function LeadEnginePage() {
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `omniagent-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `yui-ai-leads-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();

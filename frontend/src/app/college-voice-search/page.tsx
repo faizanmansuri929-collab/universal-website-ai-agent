@@ -1892,14 +1892,6 @@ export default function CollegeVoiceSearchPage() {
                 />
                 <span>Allow interrupting</span>
               </label>
-
-              {/* STT Engine Status Badge (Native with Universal Cross-Browser Fallback) */}
-              <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/25 rounded-xl px-2.5 py-1 text-xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="font-semibold text-emerald-700 dark:text-emerald-300">
-                  STT: {hasNativeSpeechSupport ? 'Web Speech API (Native Fast)' : 'WebRTC Cloud Speech (Universal Fallback)'}
-                </span>
-              </div>
             </div>
 
             <p className="text-[11px] t3 flex items-center gap-1.5">
@@ -2069,7 +2061,6 @@ export default function CollegeVoiceSearchPage() {
                 <span className="font-bold text-xs uppercase tracking-wider t2 flex items-center gap-1.5">
                   <FileText className="w-4 h-4 text-teal-600" /> Screen output &amp; citations
                 </span>
-                <span className="badge badge-teal">Grounded in {domain}</span>
               </div>
 
               {/* Chat Feed */}
@@ -2123,9 +2114,6 @@ export default function CollegeVoiceSearchPage() {
                         <div className="flex items-center gap-1.5 flex-wrap mb-1">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
                             {collegeName} Assistant
-                          </span>
-                          <span className="badge badge-emerald text-[10px]">
-                            <Sparkles className="w-2.5 h-2.5" /> Live Grounded Output
                           </span>
                           {m.detectedIntent && (
                             <span className="badge badge-slate text-[10px] uppercase">

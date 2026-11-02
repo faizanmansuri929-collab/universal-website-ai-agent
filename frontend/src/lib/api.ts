@@ -709,6 +709,30 @@ export const api = {
       } catch (err) {}
       return null;
     }
+  },
+
+  createLiveSession: async (
+    projectId: string,
+    sdp: string,
+    voice: string = 'nira',
+    language: string = 'hi',
+    model: string = 'gpt-live-1'
+  ): Promise<{
+    session_id: string;
+    sdp: string;
+    model: string;
+    voice: string;
+    college_name: string;
+    base_domain: string;
+  }> => {
+    const res = await axios.post(`${API_BASE}/college-voice/live-session`, {
+      project_id: projectId,
+      sdp,
+      voice,
+      language,
+      model,
+    });
+    return res.data;
   }
 };
 

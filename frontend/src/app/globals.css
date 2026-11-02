@@ -26,8 +26,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.015em;
+}
+
 ::selection {
-  background: rgba(37, 99, 235, .18);
+  background: rgba(225, 29, 72, .18);
 }
 
 ::-webkit-scrollbar {
@@ -92,13 +97,14 @@ body {
   transform: none !important;
 }
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary), var(--primary-600));
+  background: var(--primary);
   color: #fff;
-  box-shadow: 0 8px 18px -8px rgba(37, 99, 235, .6);
+  box-shadow: 0 4px 14px -4px rgba(225, 29, 72, .5);
 }
 .btn-primary:hover {
+  background: var(--primary-600);
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px -8px rgba(37, 99, 235, .55);
+  box-shadow: 0 8px 20px -6px rgba(225, 29, 72, .55);
 }
 .btn-secondary {
   background: var(--surface);
@@ -484,6 +490,34 @@ html.dark .sim-badge {
 .app-nav-link.active { background: var(--primary-soft); color: var(--primary); }
 .app-nav-link .lucide { width: 1.05rem; height: 1.05rem; }
 
+/* Dedicated Yui AI Console Prototype Sidebar Styling */
+.app-sidebar {
+  background: var(--indigo) !important;
+  color: #C7C8E6 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.app-sidebar .app-nav-link {
+  color: #C7C8E6;
+}
+.app-sidebar .app-nav-link:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+}
+.app-sidebar .app-nav-link.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+.app-sidebar .badge {
+  background: var(--red);
+  color: #ffffff;
+  border-color: transparent;
+}
+.app-sidebar .badge-teal {
+  background: #059669;
+  color: #ffffff;
+  border-color: transparent;
+}
+
 .step-dot {
   width: 1.5rem;
   height: 1.5rem;
@@ -661,3 +695,80 @@ details.adv summary {
 }
 details.adv summary::-webkit-details-marker { display: none; }
 details.adv[open] summary { border-bottom: 1px solid var(--border); }
+
+/* ================================================================
+   TEST VOICE STUDIO (GPT LIVE REALTIME CANVAS)
+================================================================ */
+.voice-studio-canvas {
+  background: radial-gradient(circle at 50% 20%, rgba(124, 58, 237, 0.08), transparent 70%),
+              radial-gradient(circle at 80% 80%, rgba(13, 148, 136, 0.06), transparent 60%),
+              var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.07);
+}
+
+.voice-wave-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 60px;
+}
+
+.voice-wave-bar {
+  width: 5px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #8B5CF6, #0D9488);
+  transition: height 0.15s ease, opacity 0.2s ease;
+  height: 8px;
+  opacity: 0.35;
+}
+
+.voice-wave-bar.active {
+  opacity: 1;
+  animation: soundwave 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes soundwave {
+  0% { height: 10px; }
+  50% { height: 48px; }
+  100% { height: 18px; }
+}
+
+.voice-wave-bar:nth-child(1) { animation-delay: 0.0s; }
+.voice-wave-bar:nth-child(2) { animation-delay: 0.2s; }
+.voice-wave-bar:nth-child(3) { animation-delay: 0.4s; }
+.voice-wave-bar:nth-child(4) { animation-delay: 0.1s; }
+.voice-wave-bar:nth-child(5) { animation-delay: 0.5s; }
+.voice-wave-bar:nth-child(6) { animation-delay: 0.3s; }
+.voice-wave-bar:nth-child(7) { animation-delay: 0.6s; }
+.voice-wave-bar:nth-child(8) { animation-delay: 0.15s; }
+.voice-wave-bar:nth-child(9) { animation-delay: 0.45s; }
+.voice-wave-bar:nth-child(10) { animation-delay: 0.25s; }
+.voice-wave-bar:nth-child(11) { animation-delay: 0.55s; }
+.voice-wave-bar:nth-child(12) { animation-delay: 0.35s; }
+
+.voice-halo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voice-halo::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 9999px;
+  background: conic-gradient(from 180deg at 50% 50%, #8B5CF6 0deg, #0D9488 180deg, #8B5CF6 360deg);
+  opacity: 0;
+  filter: blur(14px);
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.voice-halo.live::before {
+  opacity: 0.45;
+  animation: spin 6s linear infinite;
+}
